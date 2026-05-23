@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neu.hotel.mapper.CheckInMapper">
+    <select id="selectCheckInPage" resultType="com.neu.hotel.entity.CheckIn">
+        SELECT c.*, v.name AS visitor_name
+        FROM biz_check_in c
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE c.deleted = 0
+        <if test="params.visitorName != null and params.visitorName != ''">
+            AND visitor_id IN (SELECT id FROM biz_visitor WHERE name LIKE CONCAT('%', #{params.visitorName}, '%'))
+        </if>
+        <if test="params.roomNo != null and params.roomNo != ''">
+            AND room_no LIKE CONCAT('%', #{params.roomNo}, '%')
+        </if>
+        <if test="params.status != null">
+            AND check_in_status = #{params.status}
+        </if>
+        <if test="params.paymentStatus != null">
+            AND payment_status = #{params.paymentStatus}
+        </if>
+        <if test="params.startDate != null">
+            AND check_in_date >= #{params.startDate}
+        </if>
+        <if test="params.endDate != null">
+            AND check_in_date &lt;= #{params.endDate}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectActiveCheckIns" resultType="com.neu.hotel.entity.CheckIn">
+        SELECT c.*, v.name AS visitor_name
+        FROM biz_check_in c
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE c.deleted = 0 AND c.check_in_status = 1
+        ORDER BY c.check_in_date DESC
+    </select>
+
+    <select id="selectCheckInByDateRange" resultType="com.neu.hotel.entity.CheckIn">
+        SELECT c.*, v.name AS visitor_name
+        FROM biz_check_in c
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE c.deleted = 0
+        AND ((c.check_in_date BETWEEN #{startDate} AND #{endDate})
+             OR (c.check_out_date BETWEEN #{startDate} AND #{endDate}))
+        ORDER BY c.check_in_date DESC
+    </select>
+</mapper>

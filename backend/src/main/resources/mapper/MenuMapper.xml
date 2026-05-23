@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.neu.hotel.mapper.MenuMapper">
+    <select id="selectMenusByRoleId" resultType="com.neu.hotel.entity.Menu">
+        SELECT DISTINCT m.* FROM sys_menu m
+        LEFT JOIN sys_role_menu rm ON m.id = rm.menu_id
+        WHERE rm.role_id = #{roleId} AND m.status = 1 AND m.deleted = 0
+        ORDER BY m.order_num ASC
+    </select>
+
+    <select id="selectUserMenus" resultType="com.neu.hotel.entity.Menu">
+        SELECT DISTINCT m.* FROM sys_menu m
+        INNER JOIN sys_role_menu rm ON m.id = rm.menu_id
+        INNER JOIN sys_role r ON rm.role_id = r.id
+        INNER JOIN sys_user u ON u.role_id = r.id
+        WHERE u.id = #{userId} AND m.status = 1 AND m.deleted = 0
+        ORDER BY m.order_num ASC
+    </select>
+</mapper>
