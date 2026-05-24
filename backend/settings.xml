@@ -1,0 +1,20 @@
+<settings>
+  <proxies>
+    <proxy>
+      <id>host-proxy</id>
+      <active>true</active>
+      <protocol>http</protocol>
+      <host>host.docker.internal</host>
+      <port>10808</port>
+      <nonProxyHosts>localhost|127.0.0.1</nonProxyHosts>
+    </proxy>
+  </proxies>
+  <mirrors>
+    <mirror>
+      <id>aliyun</id>
+      <name>Aliyun Maven</name>
+      <mirrorOf>central</mirrorOf>
+      <url>https://maven.aliyun.com/repository/public</url>
+    </mirror>
+  </mirrors>
+</settings>

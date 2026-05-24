@@ -292,7 +292,7 @@ public class CheckInServiceImpl extends ServiceImpl<CheckInMapper, CheckIn> impl
         Map<String, Object> stats = new HashMap<>();
 
         LambdaQueryWrapper<CheckIn> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CheckIn::getCheckInStatus, 1);
+        wrapper.in(CheckIn::getCheckInStatus, 1, 4);
         long activeCount = baseMapper.selectCount(wrapper);
         stats.put("activeCheckIns", activeCount);
 

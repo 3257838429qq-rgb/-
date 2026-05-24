@@ -18,6 +18,7 @@ public class CheckIn implements Serializable {
 
     private Long visitorId;
 
+    @TableField(exist = false)
     private String idCard;
 
     private Long roomId;
