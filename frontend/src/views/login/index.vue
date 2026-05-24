@@ -15,7 +15,8 @@
         <p>Northeastern University Guesthouse Management System</p>
       </div>
 
-      <el-form ref="formRef" :model="loginForm" :rules="rules" class="login-form">
+      <!-- Login form -->
+      <el-form v-show="!isRegister" ref="loginFormRef" :model="loginForm" :rules="loginRules" class="login-form">
         <el-form-item prop="username">
           <el-input
             v-model="loginForm.username"
@@ -48,6 +49,79 @@
             {{ loading ? '登录中...' : '登 录' }}
           </el-button>
         </el-form-item>
+        <div class="form-footer">
+          <span class="switch-text">还没有账号？</span>
+          <el-button type="primary" link @click="isRegister = true">立即注册</el-button>
+        </div>
+      </el-form>
+
+      <!-- Register form -->
+      <el-form v-show="isRegister" ref="registerFormRef" :model="registerForm" :rules="registerRules" class="login-form">
+        <el-form-item prop="username">
+          <el-input
+            v-model="registerForm.username"
+            placeholder="请输入用户名"
+            size="large"
+            :prefix-icon="User"
+            class="login-input"
+          />
+        </el-form-item>
+        <el-form-item prop="realName">
+          <el-input
+            v-model="registerForm.realName"
+            placeholder="请输入真实姓名"
+            size="large"
+            :prefix-icon="UserFilled"
+            class="login-input"
+          />
+        </el-form-item>
+        <el-form-item prop="phone">
+          <el-input
+            v-model="registerForm.phone"
+            placeholder="请输入手机号"
+            size="large"
+            :prefix-icon="Phone"
+            class="login-input"
+          />
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input
+            v-model="registerForm.password"
+            type="password"
+            placeholder="请输入密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+            class="login-input"
+          />
+        </el-form-item>
+        <el-form-item prop="confirmPassword">
+          <el-input
+            v-model="registerForm.confirmPassword"
+            type="password"
+            placeholder="请确认密码"
+            size="large"
+            :prefix-icon="Lock"
+            show-password
+            class="login-input"
+            @keyup.enter="handleRegister"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button
+            type="primary"
+            size="large"
+            :loading="registering"
+            class="login-btn"
+            @click="handleRegister"
+          >
+            {{ registering ? '注册中...' : '注 册' }}
+          </el-button>
+        </el-form-item>
+        <div class="form-footer">
+          <span class="switch-text">已有账号？</span>
+          <el-button type="primary" link @click="isRegister = false">返回登录</el-button>
+        </div>
       </el-form>
     </div>
   </div>
@@ -57,28 +131,68 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { User, Lock } from '@element-plus/icons-vue'
-import { login } from '@/api/auth'
+import { User, Lock, UserFilled, Phone } from '@element-plus/icons-vue'
+import { login, register as registerApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
 
-const formRef = ref()
+const isRegister = ref(false)
+const loginFormRef = ref()
+const registerFormRef = ref()
 const loading = ref(false)
+const registering = ref(false)
+
 const loginForm = reactive({
-  username: 'admin',
-  password: '123456'
+  username: '',
+  password: ''
 })
 
-const rules = {
+const registerForm = reactive({
+  username: '',
+  realName: '',
+  phone: '',
+  password: '',
+  confirmPassword: ''
+})
+
+const loginRules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
+const validateConfirmPassword = (rule, value, callback) => {
+  if (value !== registerForm.password) {
+    callback(new Error('两次输入的密码不一致'))
+  } else {
+    callback()
+  }
+}
+
+const registerRules = {
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { min: 3, max: 20, message: '用户名长度为3-20个字符', trigger: 'blur' }
+  ],
+  realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, max: 20, message: '密码长度为6-20个字符', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认密码', trigger: 'blur' },
+    { validator: validateConfirmPassword, trigger: 'blur' }
+  ]
+}
+
 async function handleLogin() {
-  if (!formRef.value) return
-  await formRef.value.validate(async (valid) => {
+  if (!loginFormRef.value) return
+  await loginFormRef.value.validate(async (valid) => {
     if (!valid) return
     loading.value = true
     try {
@@ -95,6 +209,32 @@ async function handleLogin() {
       console.error(e)
     } finally {
       loading.value = false
+    }
+  })
+}
+
+async function handleRegister() {
+  if (!registerFormRef.value) return
+  await registerFormRef.value.validate(async (valid) => {
+    if (!valid) return
+    registering.value = true
+    try {
+      await registerApi({
+        username: registerForm.username,
+        realName: registerForm.realName,
+        phone: registerForm.phone,
+        password: registerForm.password,
+        userType: 0,
+        status: 1
+      })
+      ElMessage.success('注册成功，请登录')
+      registerFormRef.value.resetFields()
+      isRegister.value = false
+      loginForm.username = registerForm.username
+    } catch (e) {
+      console.error(e)
+    } finally {
+      registering.value = false
     }
   })
 }
@@ -215,6 +355,19 @@ async function handleLogin() {
     border-radius: 10px;
     margin-top: 8px;
     font-weight: 600;
+  }
+}
+
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  margin-top: -8px;
+
+  .switch-text {
+    font-size: 13px;
+    color: #909399;
   }
 }
 

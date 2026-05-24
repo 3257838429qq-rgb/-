@@ -3,7 +3,7 @@
     <!-- Stat cards -->
     <el-row :gutter="20" class="stat-row">
       <el-col :xs="24" :sm="8">
-        <div class="stat-card stat-blue">
+        <div class="stat-card stat-purple">
           <div class="stat-icon"><el-icon :size="28"><User /></el-icon></div>
           <div class="stat-info">
             <p class="stat-value">{{ stats.activeCheckIns }}</p>
@@ -21,7 +21,7 @@
         </div>
       </el-col>
       <el-col :xs="24" :sm="8">
-        <div class="stat-card stat-orange">
+        <div class="stat-card stat-gray">
           <div class="stat-icon"><el-icon :size="28"><Tickets /></el-icon></div>
           <div class="stat-info">
             <p class="stat-value">{{ stats.totalRooms }}</p>
@@ -113,8 +113,7 @@ import { getRoomList } from '@/api/dorm/room'
 const stats = ref({
   activeCheckIns: 0,
   availableRooms: 0,
-  totalRooms: 0,
-  monthIncome: 0
+  totalRooms: 0
 })
 
 const activeCheckIns = ref([])

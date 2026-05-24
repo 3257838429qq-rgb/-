@@ -1,0 +1,1 @@
+import{L as e}from"./index-1igfHc-C.js";function r(){return e({url:"/dorm/room-type/list",method:"get"})}function m(o){return e({url:"/dorm/room-type",method:"post",data:o})}function u(o){return e({url:"/dorm/room-type",method:"put",data:o})}function d(o){return e({url:`/dorm/room-type/${o}`,method:"delete"})}export{m as a,d,r as g,u};

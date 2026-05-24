@@ -2,9 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.neu.hotel.mapper.CheckInMapper">
     <select id="selectCheckInPage" resultType="com.neu.hotel.entity.CheckIn">
-        SELECT c.*, v.name AS visitor_name
+        SELECT c.*, v.name AS visitor_name, v.phone AS visitor_phone, v.id_card AS visitor_id_card,
+               r.rating AS review_rating,
+               r.content AS review_content, r.create_time AS review_time,
+               r.reply AS review_reply, r.reply_time AS review_reply_time,
+               r.id AS review_id
         FROM biz_check_in c
         LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        LEFT JOIN biz_review r ON c.id = r.check_in_id AND r.deleted = 0
         WHERE c.deleted = 0
         <if test="params.visitorName != null and params.visitorName != ''">
             AND visitor_id IN (SELECT id FROM biz_visitor WHERE name LIKE CONCAT('%', #{params.visitorName}, '%'))
@@ -28,11 +33,30 @@
     </select>
 
     <select id="selectActiveCheckIns" resultType="com.neu.hotel.entity.CheckIn">
-        SELECT c.*, v.name AS visitor_name
+        SELECT c.*, v.name AS visitor_name, v.phone AS visitor_phone, v.id_card AS visitor_id_card
         FROM biz_check_in c
         LEFT JOIN biz_visitor v ON c.visitor_id = v.id
         WHERE c.deleted = 0 AND c.check_in_status = 1
         ORDER BY c.check_in_date DESC
+    </select>
+
+    <select id="selectMyBookings" resultType="com.neu.hotel.entity.CheckIn">
+        SELECT c.*, v.name AS visitor_name
+        FROM biz_check_in c
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE c.deleted = 0 AND c.check_in_user_id = #{userId}
+        ORDER BY c.create_time DESC
+    </select>
+
+    <select id="selectPendingCheckIns" resultType="com.neu.hotel.entity.CheckIn">
+        SELECT c.*, v.name AS visitor_name, v.phone AS visitor_phone, v.id_card AS visitor_id_card
+        FROM biz_check_in c
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE c.deleted = 0
+        <if test="status != null">
+            AND c.check_in_status = #{status}
+        </if>
+        ORDER BY c.create_time DESC
     </select>
 
     <select id="selectCheckInByDateRange" resultType="com.neu.hotel.entity.CheckIn">

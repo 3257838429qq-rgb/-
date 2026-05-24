@@ -63,6 +63,33 @@ public class CheckIn implements Serializable {
     @TableField(exist = false)
     private String visitorName;
 
+    @TableField(exist = false)
+    private String visitorPhone;
+
+    @TableField(exist = false)
+    private String visitorIdCard;
+
+    @TableField(exist = false)
+    private Integer reviewRating;
+
+    @TableField(exist = false)
+    private String reviewContent;
+
+    @TableField(exist = false)
+    private LocalDateTime reviewTime;
+
+    @TableField(exist = false)
+    private String reply;
+
+    @TableField(exist = false)
+    private LocalDateTime replyTime;
+
+    @TableField(exist = false)
+    private Long reviewId;
+
+    @TableField(exist = false)
+    private Boolean hasReview;
+
     @TableLogic
     private Integer deleted;
 }

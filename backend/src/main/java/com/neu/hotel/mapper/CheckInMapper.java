@@ -16,5 +16,9 @@ public interface CheckInMapper extends BaseMapper<CheckIn> {
 
     IPage<CheckIn> selectActiveCheckIns(Page<?> page);
 
+    IPage<CheckIn> selectPendingCheckIns(Page<?> page, @Param("status") Integer status);
+
+    IPage<CheckIn> selectMyBookings(Page<?> page, @Param("userId") Long userId);
+
     IPage<CheckIn> selectCheckInByDateRange(Page<?> page, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }

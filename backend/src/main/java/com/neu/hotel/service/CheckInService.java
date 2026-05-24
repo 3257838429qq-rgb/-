@@ -14,7 +14,7 @@ public interface CheckInService extends IService<CheckIn> {
 
     IPage<CheckIn> selectActiveCheckIns(Long current, Long size);
 
-    IPage<CheckIn> selectPendingCheckIns(Long current, Long size);
+    IPage<CheckIn> selectPendingCheckIns(Long current, Long size, Integer status);
 
     IPage<CheckIn> selectMyBookings(Long current, Long size, Long userId);
 
@@ -29,6 +29,12 @@ public interface CheckInService extends IService<CheckIn> {
     boolean checkOut(Long checkInId, Long userId, BigDecimal otherFee, String paymentMethod);
 
     boolean recordPayment(Long checkInId, BigDecimal paidAmount, String paymentMethod);
+
+    boolean submitCheckoutRequest(Long checkInId, Long userId);
+
+    boolean approveCheckoutRequest(Long checkInId, Long userId, BigDecimal otherFee, String paymentMethod);
+
+    boolean rejectCheckoutRequest(Long checkInId, Long userId);
 
     Map<String, Object> getStatistics();
 }

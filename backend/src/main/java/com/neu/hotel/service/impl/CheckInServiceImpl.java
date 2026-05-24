@@ -49,21 +49,15 @@ public class CheckInServiceImpl extends ServiceImpl<CheckInMapper, CheckIn> impl
     }
 
     @Override
-    public IPage<CheckIn> selectPendingCheckIns(Long current, Long size) {
+    public IPage<CheckIn> selectPendingCheckIns(Long current, Long size, Integer status) {
         Page<CheckIn> page = PageUtil.buildPage(current, size);
-        LambdaQueryWrapper<CheckIn> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CheckIn::getCheckInStatus, 0);
-        wrapper.orderByDesc(CheckIn::getCreateTime);
-        return baseMapper.selectPage(page, wrapper);
+        return baseMapper.selectPendingCheckIns(page, status);
     }
 
     @Override
     public IPage<CheckIn> selectMyBookings(Long current, Long size, Long userId) {
         Page<CheckIn> page = PageUtil.buildPage(current, size);
-        LambdaQueryWrapper<CheckIn> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(CheckIn::getCheckInUserId, userId);
-        wrapper.orderByDesc(CheckIn::getCreateTime);
-        return baseMapper.selectPage(page, wrapper);
+        return baseMapper.selectMyBookings(page, userId);
     }
 
     @Override
@@ -186,13 +180,78 @@ public class CheckInServiceImpl extends ServiceImpl<CheckInMapper, CheckIn> impl
 
     @Override
     @Transactional
-    public boolean checkOut(Long checkInId, Long userId, BigDecimal otherFee, String paymentMethod) {
+    public boolean submitCheckoutRequest(Long checkInId, Long userId) {
         CheckIn record = baseMapper.selectById(checkInId);
         if (record == null) {
             throw new RuntimeException("入住记录不存在");
         }
         if (record.getCheckInStatus() != 1) {
-            throw new RuntimeException("该记录已退房");
+            throw new RuntimeException("只有入住中的记录可以申请退房");
+        }
+        if (!userId.equals(record.getCheckInUserId())) {
+            throw new RuntimeException("只能申请自己的订单退房");
+        }
+        // 状态改为4（退房申请中）
+        record.setCheckInStatus(4);
+        return baseMapper.updateById(record) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean approveCheckoutRequest(Long checkInId, Long userId, BigDecimal otherFee, String paymentMethod) {
+        CheckIn record = baseMapper.selectById(checkInId);
+        if (record == null) {
+            throw new RuntimeException("入住记录不存在");
+        }
+        if (record.getCheckInStatus() != 4) {
+            throw new RuntimeException("该记录不是退房申请状态");
+        }
+        BigDecimal other = otherFee != null ? otherFee : BigDecimal.ZERO;
+        record.setOtherFee(other);
+        record.setTotalFee(record.getRoomFee().add(other));
+        record.setPaidAmount(record.getTotalFee());
+        record.setPaymentMethod(paymentMethod != null ? paymentMethod : "现金");
+        record.setPaymentStatus(1);
+        record.setCheckInStatus(2);
+        record.setCheckOutUserId(userId);
+        record.setCheckOutTime(LocalDateTime.now());
+
+        boolean updated = baseMapper.updateById(record) > 0;
+        if (updated) {
+            DormRoom room = dormRoomMapper.selectById(record.getRoomId());
+            if (room != null) {
+                room.setStatus(1);
+                dormRoomMapper.updateById(room);
+            }
+        }
+        return updated;
+    }
+
+    @Override
+    @Transactional
+    public boolean rejectCheckoutRequest(Long checkInId, Long userId) {
+        CheckIn record = baseMapper.selectById(checkInId);
+        if (record == null) {
+            throw new RuntimeException("入住记录不存在");
+        }
+        if (record.getCheckInStatus() != 4) {
+            throw new RuntimeException("该记录不是退房申请状态");
+        }
+        // 状态恢复为1（入住中）
+        record.setCheckInStatus(1);
+        return baseMapper.updateById(record) > 0;
+    }
+
+    @Override
+    @Transactional
+    public boolean checkOut(Long checkInId, Long userId, BigDecimal otherFee, String paymentMethod) {
+        // 此方法仅供管理员使用，用户退房请使用退房申请接口
+        CheckIn record = baseMapper.selectById(checkInId);
+        if (record == null) {
+            throw new RuntimeException("入住记录不存在");
+        }
+        if (record.getCheckInStatus() != 1) {
+            throw new RuntimeException("该记录已退房或状态异常");
         }
 
         BigDecimal other = otherFee != null ? otherFee : BigDecimal.ZERO;
@@ -247,9 +306,20 @@ public class CheckInServiceImpl extends ServiceImpl<CheckInMapper, CheckIn> impl
         stats.put("totalRooms", totalRooms);
         stats.put("occupancyRate", totalRooms > 0 ? (totalRooms - availableRooms) * 100.0 / totalRooms : 0);
 
-        LambdaQueryWrapper<Visitor> pendingWrapper = new LambdaQueryWrapper<>();
-        pendingWrapper.eq(Visitor::getStatus, 0);
-        long pendingVisitors = visitorMapper.selectCount(pendingWrapper);
+        LambdaQueryWrapper<CheckIn> pendingWrapper = new LambdaQueryWrapper<>();
+        pendingWrapper.eq(CheckIn::getCheckInStatus, 0);
+        long pendingBookings = baseMapper.selectCount(pendingWrapper);
+        stats.put("pendingBookings", pendingBookings);
+
+        // 退房申请数量
+        LambdaQueryWrapper<CheckIn> checkoutReqWrapper = new LambdaQueryWrapper<>();
+        checkoutReqWrapper.eq(CheckIn::getCheckInStatus, 4);
+        long pendingCheckouts = baseMapper.selectCount(checkoutReqWrapper);
+        stats.put("pendingCheckouts", pendingCheckouts);
+
+        LambdaQueryWrapper<Visitor> visitorPendingWrapper = new LambdaQueryWrapper<>();
+        visitorPendingWrapper.eq(Visitor::getStatus, 0);
+        long pendingVisitors = visitorMapper.selectCount(visitorPendingWrapper);
         stats.put("pendingVisitors", pendingVisitors);
 
         LambdaQueryWrapper<CheckIn> monthWrapper = new LambdaQueryWrapper<>();

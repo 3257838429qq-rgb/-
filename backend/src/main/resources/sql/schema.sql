@@ -210,7 +210,7 @@ CREATE TABLE biz_check_in (
     room_no VARCHAR(20) COMMENT '房间号',
     check_in_date DATE NOT NULL COMMENT '入住日期',
     check_out_date DATE NOT NULL COMMENT '预计退房日期',
-    check_in_status INT DEFAULT 1 COMMENT '入住状态: 1入住中 2已退房 3取消',
+    check_in_status INT DEFAULT 0 COMMENT '入住状态: 0待审核 1入住中 2已退房 3已取消 4退房申请中',
     nights INT DEFAULT 1 COMMENT '住宿天数',
     room_fee DECIMAL(10,2) DEFAULT 0 COMMENT '房费',
     other_fee DECIMAL(10,2) DEFAULT 0 COMMENT '其他费用',
@@ -233,6 +233,28 @@ CREATE TABLE biz_check_in (
     INDEX idx_check_in_date (check_in_date),
     INDEX idx_payment_status (payment_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='入住记录表';
+
+-- -----------------------------------------------
+-- 11. 评分评论表
+-- -----------------------------------------------
+DROP TABLE IF EXISTS biz_review;
+CREATE TABLE biz_review (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '主键',
+    check_in_id BIGINT NOT NULL COMMENT '入住记录ID',
+    user_id BIGINT NOT NULL COMMENT '评价用户ID',
+    room_id BIGINT NOT NULL COMMENT '房间ID',
+    rating INT NOT NULL COMMENT '评分 1-5',
+    content VARCHAR(500) NOT NULL COMMENT '评价内容',
+    reply VARCHAR(500) DEFAULT NULL COMMENT '管理员回复',
+    reply_time DATETIME DEFAULT NULL COMMENT '回复时间',
+    reply_user_id BIGINT DEFAULT NULL COMMENT '回复人ID',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除',
+    INDEX idx_check_in_id (check_in_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_room_id (room_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评分评论表';
 
 -- -----------------------------------------------
 -- 初始化数据

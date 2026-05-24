@@ -7,9 +7,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.neu.hotel.common.utils.JwtUtil;
 import com.neu.hotel.common.utils.PageUtil;
+import com.neu.hotel.entity.Menu;
+import com.neu.hotel.entity.Role;
 import com.neu.hotel.entity.User;
+import com.neu.hotel.mapper.MenuMapper;
+import com.neu.hotel.mapper.RoleMapper;
 import com.neu.hotel.mapper.UserMapper;
+import com.neu.hotel.service.MenuService;
 import com.neu.hotel.service.UserService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +25,9 @@ import java.util.List;
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @Autowired
+    private RoleMapper roleMapper;
 
     @Override
     public User login(String username, String password) {
@@ -35,8 +44,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (exist != null) {
             throw new RuntimeException("用户名已存在");
         }
+        // 自动分配普通用户角色
+        if (user.getRoleId() == null) {
+            Long guestRoleId = getOrCreateGuestRole();
+            user.setRoleId(guestRoleId);
+        }
         user.setPassword(passwordEncoder.encode(user.getPassword()));
         baseMapper.insert(user);
+    }
+
+    private Long getOrCreateGuestRole() {
+        // 查找普通用户角色
+        Role guestRole = roleMapper.selectByCode("GUEST");
+        if (guestRole != null) {
+            return guestRole.getId();
+        }
+        // 如果不存在，创建普通用户角色
+        Role newRole = new Role();
+        newRole.setName("普通用户");
+        newRole.setCode("GUEST");
+        newRole.setDescription("普通用户/访客");
+        newRole.setStatus(1);
+        roleMapper.insert(newRole);
+        return newRole.getId();
     }
 
     @Override

@@ -92,6 +92,12 @@
             </div>
             <div class="room-action">
               <el-button
+                type="primary" link size="small"
+                @click="handleViewReviews(room)"
+              >
+                查看评价
+              </el-button>
+              <el-button
                 type="primary"
                 :disabled="room.status !== 1"
                 @click="handleBook(room)"
@@ -165,6 +171,31 @@
         <el-button type="primary" :loading="submitting" @click="submitForm">提交申请</el-button>
       </template>
     </el-dialog>
+
+    <!-- Room reviews dialog -->
+    <el-dialog v-model="reviewDialogVisible" :title="`${currentRoom.roomNo} 住客评价`" width="550px">
+      <div v-if="roomReviews.length > 0" class="review-summary">
+        <span class="avg-rating">平均评分</span>
+        <el-rate v-model="avgRating" disabled show-score text-color="#ff9900" />
+      </div>
+      <div v-if="reviewLoading" class="review-spin" v-loading="reviewLoading" style="min-height:120px" />
+      <div v-else-if="roomReviews.length === 0" class="review-empty">
+        <el-empty description="暂无评价" :image-size="80" />
+      </div>
+      <div v-else class="review-list">
+        <div v-for="r in roomReviews" :key="r.id" class="review-item">
+          <div class="review-item-top">
+            <span class="review-user">{{ r.userName }}</span>
+            <el-rate v-model="r.rating" disabled size="small" />
+            <span class="review-time">{{ formatReviewTime(r.createTime) }}</span>
+          </div>
+          <p class="review-item-text">{{ r.content }}</p>
+          <div v-if="r.reply" class="review-item-reply">
+            <span class="reply-label">管理员回复：</span>{{ r.reply }}
+          </div>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -173,6 +204,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Location, User, Search, Refresh } from '@element-plus/icons-vue'
 import { getRoomList, getRoomTypeList, submitBooking } from '@/api/user'
+import { getRoomReviews } from '@/api/review'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -186,6 +218,16 @@ const filterPriceMax = ref(null)
 const dialogVisible = ref(false)
 const selectedRoom = ref({})
 const formRef = ref()
+
+const reviewDialogVisible = ref(false)
+const reviewLoading = ref(false)
+const currentRoom = ref({})
+const roomReviews = ref([])
+
+const avgRating = computed(() => {
+  if (roomReviews.value.length === 0) return 0
+  return (roomReviews.value.reduce((s, r) => s + r.rating, 0) / roomReviews.value.length).toFixed(1)
+})
 
 const form = reactive({
   roomId: null, visitorName: '', phone: '', idCard: '',
@@ -278,6 +320,20 @@ async function submitForm() {
     } catch (e) { console.error(e) }
     finally { submitting.value = false }
   })
+}
+
+function formatReviewTime(d) { return d ? dayjs(d).format('YYYY-MM-DD') : '' }
+
+async function handleViewReviews(room) {
+  currentRoom.value = room
+  reviewDialogVisible.value = true
+  roomReviews.value = []
+  reviewLoading.value = true
+  try {
+    const res = await getRoomReviews(room.id)
+    if (res.code === 200) roomReviews.value = res.data || []
+  } catch (e) { console.error(e) }
+  finally { reviewLoading.value = false }
 }
 
 onMounted(() => { fetchRoomTypes(); doFilter() })
@@ -393,8 +449,74 @@ onMounted(() => { fetchRoomTypes(); doFilter() })
   }
 
   .room-action {
-    text-align: right;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
+}
+
+// Review dialog
+.review-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #f5f7fa;
+  border-radius: 8px;
+
+  .avg-rating { font-size: 14px; color: #606266; }
+}
+
+.review-empty {
+  display: flex;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.review-spin {
+  display: flex;
+  justify-content: center;
+}
+
+.review-list {
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.review-item {
+  padding: 14px 0;
+  border-bottom: 1px solid #ebeef5;
+
+  &:last-child { border-bottom: none; }
+}
+
+.review-item-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+
+  .review-user { font-size: 14px; font-weight: 600; color: #303133; }
+  .review-time { font-size: 12px; color: #c0c4cc; margin-left: auto; }
+}
+
+.review-item-text {
+  font-size: 14px;
+  color: #606266;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.review-item-reply {
+  font-size: 13px;
+  color: #409eff;
+  background: #ecf5ff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #409eff;
+
+  .reply-label { font-weight: 600; }
 }
 
 // Fee summary

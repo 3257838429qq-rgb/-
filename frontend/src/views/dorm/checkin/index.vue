@@ -18,7 +18,7 @@
       <el-table :data="tableData" stripe v-loading="loading" empty-text="暂无记录">
         <el-table-column prop="orderNo" label="订单号" width="170" />
         <el-table-column prop="roomNo" label="房间号" width="100" />
-        <el-table-column label="访客" min-width="120">
+        <el-table-column label="访客" min-width="100">
           <template #default="{ row }">
             <div class="visitor-cell">
               <el-avatar :size="28" size="small">
@@ -27,6 +27,12 @@
               <span>{{ row.visitorName || '-' }}</span>
             </div>
           </template>
+        </el-table-column>
+        <el-table-column label="电话" width="130" align="center">
+          <template #default="{ row }">{{ row.visitorPhone || row.phone || '-' }}</template>
+        </el-table-column>
+        <el-table-column label="身份证" min-width="160">
+          <template #default="{ row }">{{ row.visitorIdCard || row.idCard || '-' }}</template>
         </el-table-column>
         <el-table-column prop="checkInDate" label="入住日期" width="120" />
         <el-table-column prop="checkOutDate" label="退房日期" width="120" />
@@ -65,28 +71,19 @@
         <el-table-column label="操作" width="240" fixed="right" align="center">
           <template #default="{ row }">
             <template v-if="activeTab === 'pending'">
-              <el-button type="success" size="small" plain @click="handleApprove(row)">
+              <el-button type="success" link size="small" @click="handleApprove(row)">
                 通过
               </el-button>
-              <el-button type="danger" size="small" plain @click="handleReject(row)">
+              <el-button type="danger" link size="small" @click="handleReject(row)">
                 拒绝
               </el-button>
             </template>
             <template v-else>
               <template v-if="row.checkInStatus === 1">
                 <el-button
-                  v-if="row.paymentStatus !== 1"
-                  type="warning"
-                  size="small"
-                  plain
-                  @click="handlePay(row)"
-                >
-                  收款
-                </el-button>
-                <el-button
                   type="success"
+                  link
                   size="small"
-                  plain
                   @click="handleCheckOut(row)"
                 >
                   退房
@@ -94,9 +91,9 @@
               </template>
               <el-button
                 v-else
-                type="info"
+                type="primary"
+                link
                 size="small"
-                plain
                 @click="handleView(row)"
               >
                 查看
@@ -267,7 +264,10 @@
     <!-- View detail dialog -->
     <el-dialog v-model="viewVisible" title="入住详情" width="620px">
       <el-descriptions :column="2" border size="small">
-        <el-descriptions-item label="订单号">{{ currentRecord?.orderNo }}</el-descriptions-item>
+        <el-descriptions-item label="订单号" :span="2">{{ currentRecord?.orderNo }}</el-descriptions-item>
+        <el-descriptions-item label="访客姓名">{{ currentRecord?.visitorName || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{ currentRecord?.visitorPhone || currentRecord?.phone || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="身份证号" :span="2">{{ currentRecord?.visitorIdCard || currentRecord?.idCard || '-' }}</el-descriptions-item>
         <el-descriptions-item label="房间号">{{ currentRecord?.roomNo }}</el-descriptions-item>
         <el-descriptions-item label="入住日期">{{ currentRecord?.checkInDate }}</el-descriptions-item>
         <el-descriptions-item label="退房日期">{{ currentRecord?.checkOutDate }}</el-descriptions-item>
@@ -284,7 +284,7 @@
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="入住状态">
-          <el-tag :type="currentRecord?.checkInStatus === 1 ? 'primary' : 'success'" size="small">
+          <el-tag :type="statusTagType(currentRecord?.checkInStatus)" size="small">
             {{ getCheckInStatusText(currentRecord?.checkInStatus) }}
           </el-tag>
         </el-descriptions-item>
@@ -292,37 +292,6 @@
       </el-descriptions>
     </el-dialog>
 
-    <!-- Payment dialog -->
-    <el-dialog v-model="payVisible" title="记录收款" width="450px" :close-on-click-modal="false">
-      <el-form label-width="80px">
-        <el-form-item label="订单号">
-          <el-input :model-value="currentRecord?.orderNo" disabled />
-        </el-form-item>
-        <el-form-item label="房费">
-          <span class="fee">¥{{ currentRecord?.roomFee || 0 }}</span>
-        </el-form-item>
-        <el-form-item label="收款金额">
-          <el-input-number
-            v-model="payForm.paidAmount"
-            :min="0"
-            :precision="2"
-            style="width:100%"
-          />
-        </el-form-item>
-        <el-form-item label="支付方式">
-          <el-select v-model="payForm.paymentMethod" style="width:100%">
-            <el-option label="微信支付" value="微信支付" />
-            <el-option label="支付宝" value="支付宝" />
-            <el-option label="现金" value="现金" />
-            <el-option label="银行卡" value="银行卡" />
-          </el-select>
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="payVisible = false">取消</el-button>
-        <el-button type="primary" :loading="paying" @click="submitPay">确认收款</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
@@ -330,7 +299,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
-import { getActiveCheckIns, addCheckIn, checkOut, recordPayment } from '@/api/dorm/checkin'
+import { getActiveCheckIns, addCheckIn, checkOut } from '@/api/dorm/checkin'
 import { getAvailableRooms } from '@/api/dorm/room'
 import { getPendingCheckIns, approveBooking, rejectBooking } from '@/api/user'
 import dayjs from 'dayjs'
@@ -344,12 +313,9 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const checkoutVisible = ref(false)
 const viewVisible = ref(false)
-const payVisible = ref(false)
-const paying = ref(false)
 const currentRecord = ref({})
 const formRef = ref()
 const activeTab = ref('active')
-const payForm = reactive({ paidAmount: 0, paymentMethod: '微信支付' })
 
 const checkoutForm = reactive({ otherFee: 0, paymentMethod: '微信支付' })
 const queryParams = reactive({ current: 1, size: 10 })
@@ -385,11 +351,11 @@ const calculatedFee = computed(() => {
 })
 
 function getCheckInStatusText(status) {
-  return { 0: '待审核', 1: '入住中', 2: '已退房', 3: '已拒绝' }[status] || '-'
+  return { 0: '待审核', 1: '入住中', 2: '已退房', 3: '已拒绝', 4: '退房申请中' }[status] || '-'
 }
 
 function statusTagType(status) {
-  return { 0: 'warning', 1: 'primary', 2: 'success', 3: 'danger' }[status] || 'info'
+  return { 0: 'warning', 1: 'primary', 2: 'success', 3: 'danger', 4: 'warning' }[status] || 'info'
 }
 
 function formatDate(d) {
@@ -415,6 +381,11 @@ async function fetchData() {
 
 function onTabChange() {
   queryParams.current = 1
+  if (activeTab.value === 'pending') {
+    queryParams.status = 0
+  } else {
+    delete queryParams.status
+  }
   fetchData()
 }
 
@@ -511,25 +482,6 @@ function handleView(row) {
   viewVisible.value = true
 }
 
-function handlePay(row) {
-  currentRecord.value = row
-  payForm.paidAmount = row.roomFee || 0
-  payForm.paymentMethod = '微信支付'
-  payVisible.value = true
-}
-
-async function submitPay() {
-  paying.value = true
-  try {
-    const res = await recordPayment(currentRecord.value.id, payForm.paidAmount, payForm.paymentMethod)
-    if (res.code === 200) {
-      ElMessage.success('收款记录成功')
-      payVisible.value = false
-      fetchData()
-    }
-  } catch (e) { console.error(e) }
-  finally { paying.value = false }
-}
 
 onMounted(() => {
   fetchData()
@@ -640,5 +592,13 @@ onMounted(() => {
       letter-spacing: -0.5px;
     }
   }
+}
+</style>
+
+<style lang="scss">
+.el-table__fixed-right,
+.el-table__fixed-right .el-table__fixed-body-wrapper,
+.el-table__fixed-right .el-table__fixed-header-wrapper {
+  background-color: transparent !important;
 }
 </style>

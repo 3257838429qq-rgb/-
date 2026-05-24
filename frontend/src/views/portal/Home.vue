@@ -78,6 +78,29 @@
         </el-button>
       </div>
     </section>
+
+    <!-- Reviews section -->
+    <section v-if="reviews.length > 0" class="review-section">
+      <div class="section-header">
+        <h2>住客评价</h2>
+        <p>来自真实住客的入住体验分享</p>
+      </div>
+      <el-row :gutter="20" v-loading="reviewLoading">
+        <el-col v-for="r in reviews" :key="r.id" :md="8" :sm="12" :span="24">
+          <div class="review-card">
+            <div class="review-top">
+              <el-rate v-model="r.rating" disabled size="small" />
+              <span class="review-room">{{ r.roomNo }}</span>
+            </div>
+            <p class="review-body">{{ r.content }}</p>
+            <div class="review-footer">
+              <span class="review-user">{{ r.userName }}</span>
+              <span class="review-time">{{ formatReviewTime(r.createTime) }}</span>
+            </div>
+          </div>
+        </el-col>
+      </el-row>
+    </section>
   </div>
 </template>
 
@@ -85,17 +108,32 @@
 import { ref, onMounted } from 'vue'
 import { ArrowRight, House, Checked, Service, User } from '@element-plus/icons-vue'
 import { getRoomTypeList } from '@/api/user'
+import { getRecentReviews } from '@/api/review'
+import dayjs from 'dayjs'
 
 const roomTypes = ref([])
 const loading = ref(false)
+const reviews = ref([])
+const reviewLoading = ref(false)
 
 function parseFacility(f) {
   if (!f) return []
   try { return JSON.parse(f) } catch { return f.split(',').map(s => s.trim()) }
 }
 
+function formatReviewTime(d) { return d ? dayjs(d).format('YYYY-MM-DD') : '' }
+
 function scrollToRooms() {
   document.getElementById('room-section')?.scrollIntoView({ behavior: 'smooth' })
+}
+
+async function fetchReviews() {
+  reviewLoading.value = true
+  try {
+    const res = await getRecentReviews(6)
+    if (res.code === 200) reviews.value = res.data || []
+  } catch (e) { console.error(e) }
+  finally { reviewLoading.value = false }
 }
 
 onMounted(async () => {
@@ -105,6 +143,7 @@ onMounted(async () => {
     if (res.code === 200) roomTypes.value = res.data || []
   } catch (e) { console.error(e) }
   finally { loading.value = false }
+  fetchReviews()
 })
 </script>
 
@@ -268,6 +307,64 @@ onMounted(async () => {
   .room-meta {
     font-size: 13px; color: #606266;
     display: flex; align-items: center; gap: 16px;
+  }
+}
+
+// Review section
+.review-section {
+  margin-bottom: 32px;
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 32px;
+
+    h2 { font-size: 28px; font-weight: 700; color: #303133; margin-bottom: 8px; }
+    p { font-size: 15px; color: #909399; }
+  }
+}
+
+.review-card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+  margin-bottom: 20px;
+  transition: all 0.3s;
+
+  &:hover { box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08); }
+
+  .review-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    .review-room {
+      font-size: 12px;
+      color: #409eff;
+      background: #ecf5ff;
+      padding: 2px 10px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+  }
+
+  .review-body {
+    font-size: 14px;
+    color: #606266;
+    line-height: 1.6;
+    margin-bottom: 14px;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .review-footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #c0c4cc;
   }
 }
 </style>

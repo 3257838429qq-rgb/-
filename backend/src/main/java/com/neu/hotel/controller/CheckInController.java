@@ -93,18 +93,19 @@ public class CheckInController {
 
     @PutMapping("/checkout/{id}")
     public Result checkOut(@PathVariable Long id,
-                           @RequestParam(required = false) BigDecimal otherFee,
-                           @RequestParam(required = false) String paymentMethod,
+                           @RequestBody Map<String, Object> body,
                            HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
+        BigDecimal otherFee = body.get("otherFee") != null ? new BigDecimal(body.get("otherFee").toString()) : BigDecimal.ZERO;
+        String paymentMethod = (String) body.get("paymentMethod");
         return Result.success(checkInService.checkOut(id, userId, otherFee, paymentMethod));
     }
 
     @PutMapping("/pay/{id}")
     public Result recordPayment(@PathVariable Long id,
-                                @RequestParam BigDecimal paidAmount,
-                                @RequestParam String paymentMethod,
-                                HttpServletRequest request) {
+                                @RequestBody Map<String, Object> body) {
+        BigDecimal paidAmount = new BigDecimal(body.get("paidAmount").toString());
+        String paymentMethod = (String) body.get("paymentMethod");
         return Result.success(checkInService.recordPayment(id, paidAmount, paymentMethod));
     }
 
@@ -152,6 +153,31 @@ public class CheckInController {
         return Result.success(checkInService.submitBooking(checkIn, userId));
     }
 
+    // === 用户端退房申请 ===
+    // 用户提交退房申请（不自己设定费用）
+    @PostMapping("/checkout-request/{id}")
+    public Result submitCheckoutRequest(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(checkInService.submitCheckoutRequest(id, userId));
+    }
+
+    // 用户付款
+    @PostMapping("/user-pay/{id}")
+    public Result userPay(@PathVariable Long id,
+                          @RequestBody Map<String, Object> body,
+                          HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        CheckIn record = checkInService.getById(id);
+        if (record == null || !userId.equals(record.getCheckInUserId())) {
+            return Result.error(403, "无权操作");
+        }
+        BigDecimal paidAmount = body.get("paidAmount") != null
+                ? new BigDecimal(body.get("paidAmount").toString())
+                : record.getRoomFee();
+        String paymentMethod = (String) body.get("paymentMethod");
+        return Result.success(checkInService.recordPayment(id, paidAmount, paymentMethod));
+    }
+
     @GetMapping("/my-bookings")
     public Result getMyBookings(@RequestParam(defaultValue = "1") Long current,
                                 @RequestParam(defaultValue = "10") Long size,
@@ -164,8 +190,9 @@ public class CheckInController {
 
     @GetMapping("/pending")
     public Result getPending(@RequestParam(defaultValue = "1") Long current,
-                              @RequestParam(defaultValue = "10") Long size) {
-        return Result.success(checkInService.selectPendingCheckIns(current, size));
+                              @RequestParam(defaultValue = "10") Long size,
+                              @RequestParam(required = false) Integer status) {
+        return Result.success(checkInService.selectPendingCheckIns(current, size, status));
     }
 
     @PutMapping("/approve/{id}")
@@ -180,5 +207,24 @@ public class CheckInController {
                          HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
         return Result.success(checkInService.rejectBooking(id, userId, reason));
+    }
+
+    // === 管理端退房审批 ===
+    // 审核通过退房申请，设置额外费用，完成退房
+    @PutMapping("/checkout-approve/{id}")
+    public Result approveCheckout(@PathVariable Long id,
+                                  @RequestBody Map<String, Object> body,
+                                  HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        BigDecimal otherFee = body.get("otherFee") != null ? new BigDecimal(body.get("otherFee").toString()) : BigDecimal.ZERO;
+        String paymentMethod = (String) body.get("paymentMethod");
+        return Result.success(checkInService.approveCheckoutRequest(id, userId, otherFee, paymentMethod));
+    }
+
+    // 审核拒绝退房申请，退房申请被取消，入住状态恢复为已入住
+    @PutMapping("/checkout-reject/{id}")
+    public Result rejectCheckout(@PathVariable Long id, HttpServletRequest request) {
+        Long userId = (Long) request.getAttribute("userId");
+        return Result.success(checkInService.rejectCheckoutRequest(id, userId));
     }
 }
