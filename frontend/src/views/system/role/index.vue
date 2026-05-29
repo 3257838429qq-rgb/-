@@ -1,3 +1,27 @@
+<!--
+  角色管理组件（管理端）
+
+  【模块说明】
+  - 管理端角色管理页面
+  - 支持角色的增删改
+
+  【功能模块】
+  1. 角色列表
+  2. 新增/编辑角色弹窗
+
+  【API调用】
+  - getRoleList: 获取角色列表
+  - addRole: 新增角色
+  - updateRole: 修改角色
+  - deleteRole: 删除角色
+
+  【后端对应】
+  - Controller: RoleController
+  - 路径: /system/role
+
+  【路由对应】
+  - /admin/system/role
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

@@ -1,3 +1,30 @@
+/* ============================================================
+   东北大学校招待所系统 - 数据库初始化脚本 (01-schema.sql)
+   ============================================================
+
+   【脚本说明】
+   - 与 schema.sql 内容基本一致
+   - 用于项目初始化时创建完整数据库结构
+   - 包含所有12张表和初始化数据
+
+   【数据库名称】 hotel_db
+   【字符集】 utf8mb4
+
+   【包含内容】
+   - 系统管理模块 (sys_*): 部门、角色、用户、菜单、日志、通知
+   - 业务模块 (biz_*): 访客、房型、房间、入住、评论
+   - 初始化数据: 角色、部门、用户、菜单、房型、房间、测试数据
+
+   【使用方法】
+   - 初始化新数据库: mysql -u root -p < 01-schema.sql
+   - 注意: 本脚本会 DROP 现有表，请勿在生产环境直接执行
+
+   【关联文件】
+   - backend/src/main/resources/sql/schema.sql (完整版本)
+   - backend/src/main/resources/sql/vip.sql (VIP扩展)
+
+   ============================================================ */
+
 -- Ensure UTF-8 charset for this session
 SET NAMES utf8mb4;
 
@@ -255,14 +282,32 @@ CREATE TABLE biz_review (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评分评论表';
 
 -- -----------------------------------------------
+-- 12. 系统通知表
+-- -----------------------------------------------
+DROP TABLE IF EXISTS sys_notification;
+CREATE TABLE sys_notification (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '通知ID',
+    user_id BIGINT NOT NULL COMMENT '接收人用户ID',
+    title VARCHAR(200) NOT NULL COMMENT '通知标题',
+    content VARCHAR(500) NOT NULL COMMENT '通知内容',
+    type VARCHAR(50) COMMENT '业务类型',
+    business_id BIGINT COMMENT '关联业务ID',
+    read_status INT DEFAULT 0 COMMENT '是否已读: 0未读 1已读',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除',
+    INDEX idx_user_id (user_id),
+    INDEX idx_read_status (read_status),
+    INDEX idx_create_time (create_time)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='系统通知表';
+
+-- -----------------------------------------------
 -- 初始化数据
 -- -----------------------------------------------
 
 -- 插入角色
 INSERT INTO sys_role (name, code, description, status) VALUES
-('超级管理员', 'SUPER_ADMIN', '系统超级管理员，拥有所有权限', 1),
-('校园接待员', 'RECEPTIONIST', '负责访客接待和来访审核', 1),
-('招待所宿管', 'DORM_MANAGER', '负责招待所房间和入住管理', 1);
+('超级管理员', 'SUPER_ADMIN', '系统超级管理员，拥有所有权限', 1);
 
 -- 插入部门
 INSERT INTO sys_dept (name, parent_id, code, leader, phone, order_num, status) VALUES
@@ -275,11 +320,7 @@ INSERT INTO sys_dept (name, parent_id, code, leader, phone, order_num, status) V
 
 -- 插入用户 (密码均为 123456)
 INSERT INTO sys_user (username, password, real_name, phone, email, role_id, status) VALUES
-('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '系统管理员', '13800000001', 'admin@neu.edu.cn', 1, 1),
-('receptionist1', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '接待员甲', '13800000002', 'reception@neu.edu.cn', 2, 1),
-('receptionist2', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '接待员乙', '13800000003', 'reception2@neu.edu.cn', 2, 1),
-('dorm_manager', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '宿管张', '13800000004', 'dorm@neu.edu.cn', 3, 1),
-('dorm_keeper', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '宿管李', '13800000005', 'dorm2@neu.edu.cn', 3, 1);
+('admin', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iAt6Z5EH', '系统管理员', '13800000001', 'admin@neu.edu.cn', 1, 1);
 
 -- 插入菜单 (超级管理员的完整菜单)
 INSERT INTO sys_menu (name, path, component, parent_id, order_num, icon, perms, menu_type, status) VALUES
@@ -289,7 +330,6 @@ INSERT INTO sys_menu (name, path, component, parent_id, order_num, icon, perms, 
 ('招待所管理', '/dorm', NULL, 0, 3, 'House', NULL, 0, 1),
 ('首页', '/dashboard', 'layout/MainLayout', 0, 0, 'HomeFilled', NULL, 1, 1),
 -- 系统管理子菜单
-('用户管理', '/system/user', 'system/user/index', 1, 1, 'UserFilled', 'system:user:list', 1, 1),
 ('角色管理', '/system/role', 'system/role/index', 1, 2, 'User', 'system:role:list', 1, 1),
 ('菜单管理', '/system/menu', 'system/menu/index', 1, 3, 'Menu', 'system:menu:list', 1, 1),
 ('部门管理', '/system/dept', 'system/dept/index', 1, 4, 'Office', 'system:dept:list', 1, 1),
@@ -304,16 +344,8 @@ INSERT INTO sys_menu (name, path, component, parent_id, order_num, icon, perms, 
 ('入住登记', '/dorm/checkin', 'dorm/checkin/index', 3, 3, 'Plus', 'dorm:checkin', 1, 1),
 ('住宿记录', '/dorm/record', 'dorm/record/index', 3, 4, 'Tickets', 'dorm:record', 1, 1);
 -- 角色菜单关联
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 1), (2, 1), (3, 1);
-
--- 为角色分配菜单 (超级管理员: 所有菜单)
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15), (1, 16), (1, 17);
-
--- 校园接待员菜单 (访客管理)
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (2, 9), (2, 10), (2, 11), (2, 12);
-
--- 招待所宿管菜单 (招待所管理)
-INSERT INTO sys_role_menu (role_id, menu_id) VALUES (3, 13), (3, 14), (3, 15), (3, 16), (3, 17);
+-- 为超级管理员分配所有菜单
+INSERT INTO sys_role_menu (role_id, menu_id) VALUES (1, 1), (1, 2), (1, 3), (1, 4), (1, 5), (1, 6), (1, 7), (1, 8), (1, 9), (1, 10), (1, 11), (1, 12), (1, 13), (1, 14), (1, 15);
 
 -- 插入房型
 INSERT INTO biz_dorm_room_type (name, description, base_price, bed_count, facility, status) VALUES
@@ -344,3 +376,73 @@ INSERT INTO biz_visitor (name, phone, id_card, company, visit_purpose, visit_dat
 ('张先生', '13900000003', '440102198804033456', '企业来访', '校企合作洽谈', '2026-05-22', '全天', '王主任', '13800000007', 1),
 ('赵老师', '13900000004', '510102197512124567', '兄弟院校', '教学研讨', '2026-05-23', '上午', '刘院长', '13800000005', 0),
 ('陈学生', '13900000005', '610102200005015678', '高中来访', '校园参观', '2026-05-24', '下午', '招办', '13800000008', 1);
+
+-- -----------------------------------------------
+-- 13. VIP会员等级表
+-- -----------------------------------------------
+DROP TABLE IF EXISTS biz_vip_member;
+CREATE TABLE biz_vip_member (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '会员ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    vip_level INT DEFAULT 0 COMMENT 'VIP等级: 0普通用户 1铜牌会员 2银牌会员 3金牌会员 4钻石会员',
+    balance DECIMAL(10,2) DEFAULT 0 COMMENT '账户余额',
+    total_recharge DECIMAL(10,2) DEFAULT 0 COMMENT '累计充值金额',
+    discount_rate DECIMAL(5,2) DEFAULT 1.00 COMMENT '折扣率(0-1)',
+    expire_date DATETIME COMMENT '会员到期时间',
+    status INT DEFAULT 1 COMMENT '状态: 0冻结 1正常',
+    active TINYINT DEFAULT 0 COMMENT '是否活跃: 0不活跃 1活跃',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '成为会员时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除',
+    UNIQUE INDEX idx_user_id (user_id),
+    INDEX idx_vip_level (vip_level),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='VIP会员表';
+
+-- -----------------------------------------------
+-- 14. VIP充值记录表
+-- -----------------------------------------------
+DROP TABLE IF EXISTS biz_vip_recharge;
+CREATE TABLE biz_vip_recharge (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '充值记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    member_id BIGINT COMMENT '会员ID',
+    recharge_no VARCHAR(50) NOT NULL COMMENT '充值单号',
+    amount DECIMAL(10,2) NOT NULL COMMENT '充值金额',
+    gift_amount DECIMAL(10,2) DEFAULT 0 COMMENT '赠送金额',
+    payment_method VARCHAR(50) COMMENT '支付方式',
+    status INT DEFAULT 1 COMMENT '状态: 0失败 1成功 2处理中',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '充值时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除',
+    UNIQUE INDEX idx_recharge_no (recharge_no),
+    INDEX idx_user_id (user_id),
+    INDEX idx_member_id (member_id),
+    INDEX idx_status (status)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='VIP充值记录表';
+
+-- -----------------------------------------------
+-- 15. VIP充值套餐表
+-- -----------------------------------------------
+DROP TABLE IF EXISTS biz_vip_package;
+CREATE TABLE biz_vip_package (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY COMMENT '套餐ID',
+    name VARCHAR(50) NOT NULL COMMENT '套餐名称',
+    level INT NOT NULL COMMENT '对应VIP等级',
+    min_amount DECIMAL(10,2) NOT NULL COMMENT '最低充值金额',
+    discount_rate DECIMAL(5,2) NOT NULL COMMENT '享受折扣率',
+    description VARCHAR(200) COMMENT '套餐描述',
+    gift_rate DECIMAL(5,2) DEFAULT 0 COMMENT '赠送比例',
+    status INT DEFAULT 1 COMMENT '状态: 0禁用 1启用',
+    create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    deleted INT DEFAULT 0 COMMENT '逻辑删除',
+    UNIQUE INDEX idx_level (level)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='VIP充值套餐表';
+
+-- 初始化VIP套餐
+INSERT INTO biz_vip_package (name, level, min_amount, discount_rate, description, gift_rate, status) VALUES
+('铜牌会员', 1, 500.00, 0.95, '充值满500元，享95折优惠', 0.05, 1),
+('银牌会员', 2, 1000.00, 0.90, '充值满1000元，享9折优惠', 0.10, 1),
+('金牌会员', 3, 3000.00, 0.85, '充值满3000元，享85折优惠', 0.15, 1),
+('钻石会员', 4, 5000.00, 0.80, '充值满5000元，享8折优惠', 0.20, 1);

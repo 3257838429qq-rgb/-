@@ -1,3 +1,25 @@
+<!--
+  来访预约组件（用户端）
+
+  【模块说明】
+  - 用户端来访预约申请页面
+  - 支持提交预约和查看我的预约记录
+
+  【功能模块】
+  1. 预约表单：填写访客信息、来访时间等
+  2. 我的预约：显示已提交的预约记录
+
+  【API调用】
+  - addVisitor: 提交预约
+  - getVisitorList: 获取预约列表
+
+  【后端对应】
+  - Controller: VisitorController
+  - 路径: /visitor
+
+  【路由对应】
+  - /portal/visit
+-->
 <template>
   <div class="portal-visit">
     <div class="page-header">
@@ -134,8 +156,14 @@ const form = reactive({
 
 const rules = {
   name: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
-  idCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+  ],
+  idCard: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
+    { pattern: /^\d{17}[\dXx]$/, message: '请输入正确的18位身份证号', trigger: 'blur' }
+  ],
   visitDate: [{ required: true, message: '请选择来访日期', trigger: 'change' }],
   visitTimeSlot: [{ required: true, message: '请选择来访时段', trigger: 'change' }],
   visitPurpose: [{ required: true, message: '请填写来访目的', trigger: 'blur' }]

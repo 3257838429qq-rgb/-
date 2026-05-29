@@ -1,3 +1,38 @@
+<!--
+  我的预订页面组件
+
+  【模块说明】
+  - 展示用户的预订记录
+  - 支持付款、退房申请、评价等操作
+
+  【功能模块】
+  1. 预订列表：显示所有预订记录
+  2. 评价弹窗：提交服务评价
+  3. 退房弹窗：申请退房
+  4. 付款弹窗：订单付款
+
+  【业务规则】
+  - 待审核(status=0): 显示等待审核状态
+  - 已入住(status=1): 可付款、可申请退房
+  - 退房申请中(status=4): 显示退房待审
+  - 已退房(status=2): 可评价
+
+  【API调用】
+  - getMyBookings: 获取我的预订
+  - userPay: 订单付款
+  - submitCheckoutRequest: 申请退房
+  - submitReview: 提交评价
+  - getMyReview: 获取我的评价
+
+  【后端对应】
+  - Controller: CheckInController
+  - 路径: /dorm/checkin/my-bookings, /dorm/checkin/user-pay, /dorm/checkin/checkout-request
+  - Controller: ReviewController
+  - 路径: /review, /review/my
+
+  【路由对应】
+  - /portal/bookings
+-->
 <template>
   <div class="portal-bookings">
     <div class="page-header">
@@ -166,6 +201,7 @@
         </el-form-item>
         <el-form-item label="支付方式">
           <el-select v-model="payForm.paymentMethod" style="width:100%">
+            <el-option label="余额支付" value="余额支付" />
             <el-option label="微信支付" value="微信支付" />
             <el-option label="支付宝" value="支付宝" />
             <el-option label="银行卡" value="银行卡" />

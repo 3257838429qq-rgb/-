@@ -1,3 +1,36 @@
+<!--
+  房间管理组件（管理端）
+
+  【模块说明】
+  - 管理端房间信息管理页面
+  - 支持房间CRUD和状态管理
+
+  【功能模块】
+  1. 搜索栏：按房间号、名称、楼层、状态筛选
+  2. 房间列表：显示房间信息
+  3. 新增/编辑弹窗：房间信息维护
+  4. 状态快捷操作：设为空闲、维护
+
+  【房间状态】
+  - 1: 空闲
+  - 2: 入住
+  - 3: 维护
+  - 4: 停用
+
+  【API调用】
+  - getRoomList: 获取房间列表
+  - addRoom: 新增房间
+  - updateRoom: 修改房间
+  - updateRoomStatus: 修改房间状态
+  - getRoomTypeList: 获取房型列表
+
+  【后端对应】
+  - Controller: DormRoomController
+  - 路径: /dorm/room/page, /dorm/room, /dorm/room/status
+
+  【路由对应】
+  - /admin/dorm/room
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

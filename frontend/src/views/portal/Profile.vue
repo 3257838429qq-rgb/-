@@ -1,3 +1,26 @@
+<!--
+  个人中心组件（用户端）
+
+  【模块说明】
+  - 用户端个人中心页面
+  - 支持个人信息修改和密码修改
+
+  【功能模块】
+  1. 基本信息：编辑个人资料
+  2. 修改密码：修改登录密码
+
+  【API调用】
+  - getProfile: 获取个人信息
+  - updateProfile: 更新个人信息
+  - updatePassword: 修改密码
+
+  【后端对应】
+  - Controller: UserController
+  - 路径: /system/user
+
+  【路由对应】
+  - /portal/profile
+-->
 <template>
   <div class="portal-profile">
     <div class="page-header">
@@ -11,7 +34,7 @@
           <template #header>
             <span class="card-title">基本信息</span>
           </template>
-          <el-form ref="formRef" :model="form" label-width="80px" :disabled="!editing">
+          <el-form ref="formRef" :model="form" :rules="profileRules" label-width="80px" :disabled="!editing">
             <el-form-item label="用户名">
               <el-input v-model="form.username" disabled />
             </el-form-item>
@@ -80,6 +103,12 @@ const form = reactive({
 const pwdForm = reactive({
   oldPassword: '', newPassword: '', confirmPassword: ''
 })
+
+const profileRules = {
+  phone: [
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+  ]
+}
 
 const pwdRules = {
   oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],

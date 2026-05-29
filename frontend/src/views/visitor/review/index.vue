@@ -1,3 +1,27 @@
+<!--
+  访客预约审核组件（管理端）
+
+  【模块说明】
+  - 管理端访客预约审核页面
+  - 支持查看和审核预约申请
+
+  【功能模块】
+  1. 状态筛选：全部、待审核、已通过、已拒绝
+  2. 预约列表：显示预约信息
+  3. 审核弹窗：审核通过/拒绝
+  4. 详情弹窗：查看预约详情
+
+  【API调用】
+  - getVisitorList: 获取预约列表
+  - reviewVisitor: 审核预约
+
+  【后端对应】
+  - Controller: VisitorController
+  - 路径: /visitor/page, /visitor/review
+
+  【路由对应】
+  - /admin/visitor/review
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

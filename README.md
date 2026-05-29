@@ -28,13 +28,10 @@
 | 角色 | 角色编码 | 说明 |
 |------|---------|------|
 | 超级管理员 | SUPER_ADMIN | 系统最高权限，可管理所有模块 |
-| 校园接待员 | RECEPTIONIST | 负责访客接待、来访预约、审核 |
-| 招待所宿管 | DORM_MANAGER | 负责招待所房间、入住、退房结算 |
 
 ## 系统功能
 
 ### 1. 系统管理
-- 用户管理：增删改查、密码重置、状态管理
 - 角色管理：角色权限配置
 - 部门管理：树形结构组织架构
 - 操作日志：完整操作审计追踪
@@ -145,13 +142,10 @@ npm run build
 | 用户名 | 密码 | 角色 |
 |--------|------|------|
 | admin | 123456 | 超级管理员 |
-| receptionist1 | 123456 | 校园接待员 |
-| dorm_manager | 123456 | 招待所宿管 |
 
 ## 数据库配置
 
-修改 `backend/src/main/resources/application.yml` 中的数据库连接配置：
-
+修改 `backend/src/main/resources/application.yml` 中的数据库连接配置：11
 ```yaml
 spring:
   datasource:

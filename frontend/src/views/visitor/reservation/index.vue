@@ -1,3 +1,29 @@
+<!--
+  访客预约管理组件（管理端）
+
+  【模块说明】
+  - 管理端访客预约管理页面
+  - 支持查看和审核预约申请
+
+  【功能模块】
+  1. 搜索栏：按姓名、电话、状态筛选
+  2. 预约列表：显示所有预约记录
+  3. 新增预约弹窗：录入访客预约
+  4. 审核弹窗：审核通过/拒绝
+  5. 详情弹窗：查看预约详情
+
+  【API调用】
+  - getVisitorList: 获取预约列表
+  - addVisitor: 新增预约
+  - reviewVisitor: 审核预约
+
+  【后端对应】
+  - Controller: VisitorController
+  - 路径: /visitor
+
+  【路由对应】
+  - /admin/visitor/reservation
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">
@@ -9,7 +35,7 @@
       </template>
       <el-alert type="info" :closable="false" style="margin-bottom:16px">
         <template #title>
-          <span>预约说明：访客可通过本系统提交来访预约申请，预约提交后将由接待员进行审核，审核通过后方可到访。</span>
+          <span>预约说明：访客可通过本系统提交来访预约申请，预约提交后将由管理员进行审核，审核通过后方可到访。</span>
         </template>
       </el-alert>
 
@@ -141,7 +167,17 @@ const formRef = ref()
 const queryParams = reactive({ current: 1, size: 10, name: '', phone: '', status: null })
 const form = reactive({ name: '', phone: '', idCard: '', company: '', visitPurpose: '', visitDate: '', visitTimeSlot: '', hostPerson: '', hostPersonPhone: '', carPlate: '', remark: '' })
 const reviewForm = reactive({ id: null, status: 1, remark: '' })
-const rules = { name: [{ required: true, message: '请输入访客姓名', trigger: 'blur' }], phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }], visitDate: [{ required: true, message: '请选择来访日期', trigger: 'change' }] }
+const rules = {
+  name: [{ required: true, message: '请输入访客姓名', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+  ],
+  idCard: [
+    { pattern: /^\d{17}[\dXx]$/, message: '请输入正确的18位身份证号', trigger: 'blur' }
+  ],
+  visitDate: [{ required: true, message: '请选择来访日期', trigger: 'change' }]
+}
 
 function getStatusType(status) { return { 0: 'warning', 1: 'success', 2: 'danger' }[status] || 'info' }
 function getStatusText(status) { return { 0: '待审核', 1: '已通过', 2: '已拒绝' }[status] || '-' }

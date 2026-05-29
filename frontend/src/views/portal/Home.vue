@@ -1,3 +1,29 @@
+<!--
+  用户端首页组件
+
+  【模块说明】
+  - 用户端首页，展示招待所概览和快速入口
+  - 包含Banner、特点介绍、房型展示、住客评价
+
+  【功能模块】
+  1. Hero Banner：招待所宣传图
+  2. 特点介绍：舒适客房、便捷预订、贴心服务
+  3. 精选房型：展示房型列表
+  4. 住客评价：最新评价展示
+
+  【API调用】
+  - getRoomTypeList: 获取房型列表
+  - getRecentReviews: 获取最新评价
+
+  【后端对应】
+  - Controller: DormRoomTypeController
+  - 路径: /dorm/room-type/list
+  - Controller: ReviewController
+  - 路径: /review/recent
+
+  【路由对应】
+  - /portal/home
+-->
 <template>
   <div class="portal-home">
     <!-- Hero banner -->
@@ -51,7 +77,7 @@
         <el-col v-for="room in roomTypes" :key="room.id" :md="6" :sm="12" :span="24">
           <div class="room-card" @click="$router.push('/portal/rooms')">
             <div class="room-card-img">
-              <img src="/418.webp" alt="room" />
+              <img :src="getRoomImage(room.name)" alt="room" />
               <div class="room-price">
                 <span class="price-num">¥{{ room.basePrice }}</span>
                 <span class="price-unit">/晚</span>
@@ -121,6 +147,16 @@ function parseFacility(f) {
   try { return JSON.parse(f) } catch { return f.split(',').map(s => s.trim()) }
 }
 
+function getRoomImage(name) {
+  if (!name) return '/418.webp'
+  const n = name.toLowerCase()
+  if (n.includes('单')) return '/images/单人间.png'
+  if (n.includes('标准')) return '/images/标准间.png'
+  if (n.includes('商务')) return '/images/商务房.png'
+  if (n.includes('套')) return '/images/套房.png'
+  return '/418.webp'
+}
+
 function formatReviewTime(d) { return d ? dayjs(d).format('YYYY-MM-DD') : '' }
 
 function scrollToRooms() {
@@ -157,9 +193,18 @@ onMounted(async () => {
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes heroSlide {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  30% { opacity: 1; }
+  35% { opacity: 0; }
+  100% { opacity: 0; }
+}
+
 // Hero
 .hero {
-  background: linear-gradient(135deg, #1a3a5c 0%, #2d6a9f 50%, #4a9fd4 100%);
+  background: linear-gradient(135deg, rgba(26, 58, 92, 0.85) 0%, rgba(45, 106, 159, 0.75) 50%, rgba(74, 159, 212, 0.7) 100%),
+              url('/images/dongda1.png') center/cover no-repeat;
   border-radius: 16px;
   padding: 80px 60px;
   text-align: center;
@@ -167,13 +212,18 @@ onMounted(async () => {
   margin-bottom: 48px;
   position: relative;
   overflow: hidden;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
   &::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: url('/418.webp') center / cover no-repeat;
-    opacity: 0.05;
+    background: url('/images/dongda2.jpg') center/cover no-repeat;
+    opacity: 0;
+    animation: heroSlide 18s infinite;
   }
 
   .hero-content {
@@ -277,7 +327,6 @@ onMounted(async () => {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.7;
   }
 
   .room-price {

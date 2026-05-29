@@ -1,3 +1,28 @@
+<!--
+  部门管理组件（管理端）
+
+  【模块说明】
+  - 管理端部门管理页面
+  - 支持部门的增删改和树形结构展示
+
+  【功能模块】
+  1. 部门树形列表
+  2. 新增/编辑部门弹窗
+  3. 子部门创建
+
+  【API调用】
+  - getDeptList: 获取部门列表
+  - addDept: 新增部门
+  - updateDept: 修改部门
+  - deleteDept: 删除部门
+
+  【后端对应】
+  - Controller: DeptController
+  - 路径: /system/dept
+
+  【路由对应】
+  - /admin/system/dept
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

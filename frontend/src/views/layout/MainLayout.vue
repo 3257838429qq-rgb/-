@@ -1,3 +1,40 @@
+<!--
+  管理端主布局组件
+
+  【模块说明】
+  - 管理端页面的整体布局框架
+  - 包含侧边栏菜单、顶栏、标签页、主内容区
+
+  【布局结构】
+  1. 侧边栏：可折叠的导航菜单
+  2. 顶栏：面包屑、通知、用户信息
+  3. 标签栏：多标签页切换
+  4. 主内容区：页面组件渲染
+
+  【功能模块】
+  1. 侧边栏菜单：根据用户权限显示菜单项
+  2. 通知中心：显示系统通知，支持已读标记
+  3. 用户下拉：个人中心、修改密码、退出登录
+  4. 标签页：记录访问过的页面，支持关闭
+
+  【状态管理】
+  - 使用useUserStore获取用户信息
+  - menus: 从服务器获取的菜单权限
+  - unreadCount: 未读通知数量
+
+  【API调用】
+  - getNotificationList: 获取通知列表
+  - getUnreadCount: 获取未读数量
+  - markAsRead: 标记已读
+  - markAllAsRead: 全部已读
+  - logout: 退出登录
+
+  【路由对应】
+  - /admin/dashboard: 首页
+  - /admin/system/*: 系统管理
+  - /admin/visitor/*: 访客管理
+  - /admin/dorm/*: 招待所管理
+-->
 <template>
   <el-container class="layout-container">
     <!-- Sidebar -->
@@ -27,7 +64,6 @@
               <el-icon><Setting /></el-icon>
               <span>系统管理</span>
             </template>
-            <el-menu-item index="/admin/system/user" v-if="hasRole(1)">用户管理</el-menu-item>
             <el-menu-item index="/admin/system/role" v-if="hasRole(1)">角色管理</el-menu-item>
             <el-menu-item index="/admin/system/dept" v-if="hasRole(1)">部门管理</el-menu-item>
             <el-menu-item index="/admin/system/log" v-if="hasRole(1)">操作日志</el-menu-item>
@@ -78,6 +114,50 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
+          <!-- Notification bell -->
+          <el-popover
+            ref="notifPopoverRef"
+            placement="bottom-end"
+            :width="380"
+            trigger="click"
+          >
+            <template #reference>
+              <el-badge :value="unreadCount" :hidden="unreadCount === 0" :max="99" class="notif-badge">
+                <el-icon class="header-icon notif-icon">
+                  <Bell />
+                </el-icon>
+              </el-badge>
+            </template>
+            <div class="notif-panel">
+              <div class="notif-header">
+                <span class="notif-title">我的通知</span>
+                <el-button type="primary" link size="small" @click="markAllRead" v-if="unreadCount > 0">
+                  全部已读
+                </el-button>
+              </div>
+              <el-scrollbar style="height: 340px">
+                <div v-if="notifications.length === 0" class="notif-empty">
+                  <el-icon size="32" color="#c0c4cc"><Bell /></el-icon>
+                  <p>暂无通知</p>
+                </div>
+                <div
+                  v-for="item in notifications"
+                  :key="item.id"
+                  class="notif-item"
+                  :class="{ unread: item.readStatus === 0 }"
+                  @click="handleNotifClick(item)"
+                >
+                  <div class="notif-item-dot" v-if="item.readStatus === 0"></div>
+                  <div class="notif-item-body">
+                    <div class="notif-item-title">{{ item.title }}</div>
+                    <div class="notif-item-content">{{ item.content }}</div>
+                    <div class="notif-item-time">{{ formatTime(item.createTime) }}</div>
+                  </div>
+                </div>
+              </el-scrollbar>
+            </div>
+          </el-popover>
+
           <el-tooltip content="全屏" placement="bottom">
             <el-icon class="header-icon" @click="toggleFullScreen">
               <FullScreen />
@@ -138,15 +218,16 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   HomeFilled, Setting, User, House, Expand, Fold,
-  FullScreen, ArrowDown, Lock, SwitchButton
+  FullScreen, ArrowDown, Lock, SwitchButton, Bell
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { logout } from '@/api/auth'
+import { getNotificationList, getUnreadCount, markAsRead, markAllAsRead } from '@/api/notification'
 
 const route = useRoute()
 const router = useRouter()
@@ -157,6 +238,12 @@ const activeMenu = ref(route.path)
 const activeTab = ref(route.path)
 const visitedPages = ref([])
 const cachedViews = ref([])
+
+// Notification state
+const notifPopoverRef = ref()
+const notifications = ref([])
+const unreadCount = ref(0)
+let notifTimer = null
 
 watch(() => route.path, (newPath) => {
   activeMenu.value = newPath
@@ -220,6 +307,7 @@ async function handleCommand(command) {
   if (command === 'logout') {
     await ElMessageBox.confirm('确定要退出登录吗？', '提示', { type: 'warning' })
     try { await logout() } catch (e) { /* ignore */ }
+    stopNotifPolling()
     userStore.logout()
     router.push('/login')
   } else if (command === 'profile') {
@@ -229,7 +317,89 @@ async function handleCommand(command) {
   }
 }
 
-// Init first page
+async function fetchNotifications() {
+  try {
+    const res = await getNotificationList({ current: 1, size: 20 })
+    if (res.code === 200) {
+      notifications.value = res.data.records || res.data || []
+    }
+  } catch (e) {
+    console.error('获取通知列表失败', e)
+  }
+}
+
+async function fetchUnreadCount() {
+  try {
+    const res = await getUnreadCount()
+    if (res.code === 200) {
+      unreadCount.value = res.data || 0
+    }
+  } catch (e) {
+    console.error('获取未读数失败', e)
+  }
+}
+
+async function markAllRead() {
+  try {
+    await markAllAsRead()
+    unreadCount.value = 0
+    notifications.value.forEach(n => n.readStatus = 1)
+  } catch (e) {
+    console.error('标记全部已读失败', e)
+  }
+}
+
+async function handleNotifClick(item) {
+  if (item.readStatus === 0) {
+    try {
+      await markAsRead(item.id)
+      item.readStatus = 1
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    } catch (e) {
+      console.error('标记已读失败', e)
+    }
+  }
+  notifPopoverRef.value?.hide()
+}
+
+function formatTime(timeStr) {
+  if (!timeStr) return ''
+  const d = new Date(timeStr)
+  const now = new Date()
+  const diff = now - d
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前'
+  if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前'
+  if (diff < 604800000) return Math.floor(diff / 86400000) + '天前'
+  return timeStr.slice(0, 16).replace('T', ' ')
+}
+
+function startNotifPolling() {
+  fetchNotifications()
+  fetchUnreadCount()
+  notifTimer = setInterval(() => {
+    fetchUnreadCount()
+    if (notifications.value.length > 0) {
+      fetchNotifications()
+    }
+  }, 30000)
+}
+
+function stopNotifPolling() {
+  if (notifTimer) {
+    clearInterval(notifTimer)
+    notifTimer = null
+  }
+}
+
+onMounted(() => {
+  startNotifPolling()
+})
+
+onUnmounted(() => {
+  stopNotifPolling()
+})
+
 addVisitedPage(route.path, route.meta.title || route.path)
 </script>
 
@@ -401,6 +571,10 @@ addVisitedPage(route.path, route.meta.title || route.path)
       }
     }
 
+    .notif-icon {
+      font-size: 20px;
+    }
+
     .user-info {
       display: flex;
       align-items: center;
@@ -481,6 +655,111 @@ addVisitedPage(route.path, route.meta.title || route.path)
   padding: 20px;
   overflow-y: auto;
   flex: 1;
+}
+
+// ===== Notification panel =====
+.notif-badge {
+  :deep(.el-badge__content) {
+    top: 2px;
+    right: 2px;
+  }
+}
+
+.notif-panel {
+  margin: -12px;
+  user-select: none;
+
+  .notif-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #ebeef5;
+
+    .notif-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #303133;
+    }
+  }
+
+  .notif-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px 0;
+    color: #909399;
+
+    p {
+      margin-top: 8px;
+      font-size: 14px;
+    }
+  }
+
+  .notif-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-bottom: 1px solid #f5f7fa;
+
+    &:last-child {
+      border-bottom: none;
+    }
+
+    &:hover {
+      background: #f5f7fa;
+    }
+
+    &.unread {
+      background: #ecf5ff;
+
+      &:hover {
+        background: #d9ecff;
+      }
+    }
+
+    .notif-item-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #f56c6c;
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    .notif-item-body {
+      flex: 1;
+      min-width: 0;
+
+      .notif-item-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: #303133;
+        margin-bottom: 4px;
+        line-height: 1.4;
+      }
+
+      .notif-item-content {
+        font-size: 12px;
+        color: #606266;
+        line-height: 1.5;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        margin-bottom: 4px;
+      }
+
+      .notif-item-time {
+        font-size: 11px;
+        color: #909399;
+      }
+    }
+  }
 }
 
 // Transitions

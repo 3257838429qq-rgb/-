@@ -1,3 +1,37 @@
+<!--
+  管理端入住登记组件
+
+  【模块说明】
+  - 管理端的入住登记页面
+  - 支持入住登记、退房结算、审批管理
+
+  【功能模块】
+  1. 标签页：入住中、待审核
+  2. 入住列表：显示入住记录
+  3. 新增入住弹窗：前台快速登记
+  4. 退房弹窗：结算费用
+  5. 详情弹窗：查看入住信息
+
+  【业务规则】
+  - 入住中: 显示当前入住记录，支持退房
+  - 待审核: 显示待审批的预订申请
+
+  【API调用】
+  - getActiveCheckIns: 获取当前入住
+  - getPendingCheckIns: 获取待审核
+  - addCheckIn: 新增入住
+  - approveBooking: 审批通过
+  - rejectBooking: 审批拒绝
+  - checkOut: 退房结算
+  - getAvailableRooms: 获取空闲房间
+
+  【后端对应】
+  - Controller: CheckInController
+  - 路径: /dorm/checkin/active, /dorm/checkin/pending, /dorm/checkin, /dorm/checkin/approve, /dorm/checkin/reject, /dorm/checkin/checkout
+
+  【路由对应】
+  - /admin/dorm/checkin
+-->
 <template>
   <div class="page-container">
     <el-card shadow="never">
@@ -327,8 +361,14 @@ const form = reactive({
 
 const rules = {
   visitorName: [{ required: true, message: '请输入访客姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
-  idCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入联系电话', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+  ],
+  idCard: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
+    { pattern: /^\d{17}[\dXx]$/, message: '请输入正确的18位身份证号', trigger: 'blur' }
+  ],
   roomId: [{ required: true, message: '请选择房间', trigger: 'change' }],
   checkInDate: [{ required: true, message: '请选择入住日期', trigger: 'change' }],
   checkOutDate: [{ required: true, message: '请选择退房日期', trigger: 'change' }]

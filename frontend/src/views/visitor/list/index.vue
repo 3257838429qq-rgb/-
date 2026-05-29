@@ -1,3 +1,30 @@
+<!--
+  访客列表管理组件（管理端）
+
+  【模块说明】
+  - 管理端访客信息管理页面
+  - 支持访客录入、编辑、审核、删除
+
+  【功能模块】
+  1. 搜索栏：按姓名、电话、状态筛选
+  2. 访客列表：显示访客信息
+  3. 录入弹窗：新增/编辑访客
+  4. 审核弹窗：审核访客申请
+
+  【API调用】
+  - getVisitorList: 获取访客列表
+  - addVisitor: 新增访客
+  - updateVisitor: 修改访客
+  - deleteVisitor: 删除访客
+  - reviewVisitor: 审核访客
+
+  【后端对应】
+  - Controller: VisitorController
+  - 路径: /visitor/page, /visitor, /visitor/review
+
+  【路由对应】
+  - /admin/visitor/list
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

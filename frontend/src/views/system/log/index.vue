@@ -1,3 +1,24 @@
+<!--
+  操作日志管理组件（管理端）
+
+  【模块说明】
+  - 管理端操作日志查询页面
+  - 显示用户在系统中的操作记录
+
+  【功能模块】
+  1. 日志列表：按标题、类型筛选
+  2. 详情弹窗：查看请求参数和返回结果
+
+  【API调用】
+  - getLogList: 获取日志列表
+
+  【后端对应】
+  - Controller: SysOperLogController
+  - 路径: /system/oper-log
+
+  【路由对应】
+  - /admin/system/log
+-->
 <template>
   <div class="page-container">
     <el-card shadow="hover">

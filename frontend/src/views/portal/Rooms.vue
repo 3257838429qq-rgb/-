@@ -1,3 +1,43 @@
+<!--
+  客房浏览与预订组件
+
+  【模块说明】
+  - 展示空闲房间列表
+  - 支持筛选和搜索
+  - 提供在线预订功能
+
+  【功能模块】
+  1. 筛选栏：关键词搜索、价格区间
+  2. 房型标签：按房型筛选
+  3. 房间卡片：显示房间信息和状态
+  4. 预订弹窗：填写入住信息、计算费用
+  5. 评价弹窗：查看房间评价
+
+  【业务逻辑】
+  - 仅显示空闲房间(status=1)
+  - VIP用户显示折扣价格
+  - 预订需审核通过
+
+  【API调用】
+  - getRoomList: 分页查询空闲房间
+  - getRoomTypeList: 获取房型列表
+  - submitBooking: 提交预订申请
+  - getVipMemberInfo: 获取VIP信息
+  - getRoomReviews: 获取房间评价
+
+  【后端对应】
+  - Controller: DormRoomController
+  - 路径: /dorm/room/available, /dorm/room-type/list
+  - Controller: CheckInController
+  - 路径: /dorm/checkin/booking
+  - Controller: VipController
+  - 路径: /vip/member
+  - Controller: ReviewController
+  - 路径: /review/room/{id}
+
+  【路由对应】
+  - /portal/rooms
+-->
 <template>
   <div class="portal-rooms">
     <div class="page-header">
@@ -68,7 +108,7 @@
       <el-col v-for="room in rooms" :key="room.id" :xs="24" :sm="12" :lg="8">
         <div class="room-card">
           <div class="room-card-img">
-            <img src="/418.webp" alt="room" />
+            <img :src="getRoomTypeImage(room.roomTypeId)" alt="room" />
             <div class="room-status" :class="statusClass(room.status)">
               {{ statusText(room.status) }}
             </div>
@@ -157,9 +197,26 @@
             <span>预计天数</span>
             <strong>{{ nights }} 晚</strong>
           </div>
-          <div class="fee-row">
+          <div class="fee-row" v-if="isVip">
+            <span>原价房费</span>
+            <strong class="original-price">¥{{ totalFee.toFixed(2) }}</strong>
+          </div>
+          <div class="fee-row" v-if="isVip">
+            <span class="vip-discount-label">
+              <el-icon><StarFilled /></el-icon> VIP{{ ((1 - (vipInfo.discountRate || 1)) * 100).toFixed(0) }}折
+            </span>
+            <strong class="vip-price">¥{{ discountedFee.toFixed(2) }}</strong>
+          </div>
+          <div class="fee-row" v-if="isVip">
+            <span class="save-label">节省</span>
+            <strong class="save-amount">¥{{ savedAmount.toFixed(2) }}</strong>
+          </div>
+          <div class="fee-row" v-if="!isVip">
             <span>预计房费</span>
             <strong class="price">¥{{ totalFee.toFixed(2) }}</strong>
+          </div>
+          <div class="vip-tip" v-if="!isVip">
+            <router-link to="/portal/vip">成为VIP会员可享折扣优惠</router-link>
           </div>
         </div>
         <el-alert type="info" :closable="false" show-icon style="margin-top:12px">
@@ -202,9 +259,10 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Location, User, Search, Refresh } from '@element-plus/icons-vue'
+import { Location, User, Search, Refresh, StarFilled } from '@element-plus/icons-vue'
 import { getRoomList, getRoomTypeList, submitBooking } from '@/api/user'
 import { getRoomReviews } from '@/api/review'
+import { getVipMemberInfo } from '@/api/vip'
 import dayjs from 'dayjs'
 
 const loading = ref(false)
@@ -218,6 +276,7 @@ const filterPriceMax = ref(null)
 const dialogVisible = ref(false)
 const selectedRoom = ref({})
 const formRef = ref()
+const vipInfo = ref({})
 
 const reviewDialogVisible = ref(false)
 const reviewLoading = ref(false)
@@ -236,8 +295,14 @@ const form = reactive({
 
 const rules = {
   visitorName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入手机号', trigger: 'blur' }],
-  idCard: [{ required: true, message: '请输入身份证号', trigger: 'blur' }],
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的11位手机号', trigger: 'blur' }
+  ],
+  idCard: [
+    { required: true, message: '请输入身份证号', trigger: 'blur' },
+    { pattern: /^\d{17}[\dXx]$/, message: '请输入正确的18位身份证号', trigger: 'blur' }
+  ],
   checkInDate: [{ required: true, message: '请选择入住日期', trigger: 'change' }],
   checkOutDate: [{ required: true, message: '请选择退房日期', trigger: 'change' }]
 }
@@ -253,9 +318,31 @@ const nights = computed(() => {
 
 const totalFee = computed(() => (selectedRoom.value.price || 0) * nights.value)
 
+const discountedFee = computed(() => {
+  if (!vipInfo.value || !vipInfo.value.active || !vipInfo.value.discountRate) {
+    return totalFee.value
+  }
+  return totalFee.value * (vipInfo.value.discountRate || 1)
+})
+
+const savedAmount = computed(() => totalFee.value - discountedFee.value)
+
+const isVip = computed(() => vipInfo.value && vipInfo.value.vipLevel > 0)
+
 function statusClass(s) { return { 1: 'available', 2: 'occupied', 3: 'maintenance', 4: 'disabled' }[s] || '' }
 function statusText(s) { return { 1: '空闲', 2: '已入住', 3: '维护中', 4: '已停用' }[s] || '' }
 function roomTypeName(id) { return roomTypes.value.find(t => t.id === id)?.name || '' }
+
+function getRoomTypeImage(roomTypeId) {
+  const name = roomTypeName(roomTypeId)
+  const imageMap = {
+    '单人间': '/images/单人间.png',
+    '标准间': '/images/标准间.png',
+    '商务间': '/images/商务房.png',
+    '套房': '/images/套房.png'
+  }
+  return imageMap[name] || '/418.webp'
+}
 
 function parseFacilities(f) {
   if (!f) return []
@@ -291,6 +378,17 @@ async function fetchRoomTypes() {
     const res = await getRoomTypeList()
     if (res.code === 200) roomTypes.value = res.data || []
   } catch (e) { console.error(e) }
+}
+
+async function fetchVipInfo() {
+  try {
+    const res = await getVipMemberInfo()
+    if (res.code === 200) {
+      vipInfo.value = res.data || {}
+    }
+  } catch (e) {
+    console.error(e)
+  }
 }
 
 function handleBook(room) {
@@ -336,7 +434,7 @@ async function handleViewReviews(room) {
   finally { reviewLoading.value = false }
 }
 
-onMounted(() => { fetchRoomTypes(); doFilter() })
+onMounted(() => { fetchRoomTypes(); fetchVipInfo(); doFilter() })
 </script>
 
 <style lang="scss" scoped>
@@ -535,6 +633,48 @@ onMounted(() => { fetchRoomTypes(); doFilter() })
 
     strong { font-size: 16px; color: #303133; }
     .price { color: #f56c6c; font-size: 20px; }
+
+    .original-price {
+      color: #909399;
+      text-decoration: line-through;
+      font-size: 14px;
+    }
+
+    .vip-price { color: #67c23a; font-size: 22px; font-weight: 700; }
+
+    .vip-discount-label {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: #e6a23c;
+      font-weight: 600;
+    }
+
+    .save-label {
+      color: #67c23a;
+      font-weight: 500;
+    }
+
+    .save-amount {
+      color: #67c23a;
+      font-size: 16px;
+    }
+  }
+
+  .vip-tip {
+    margin-top: 10px;
+    text-align: center;
+    font-size: 13px;
+    color: #909399;
+    padding-top: 10px;
+    border-top: 1px dashed #d9ecff;
+
+    a {
+      color: #409eff;
+      text-decoration: none;
+
+      &:hover { text-decoration: underline; }
+    }
   }
 }
 </style>

@@ -1,65 +1,28 @@
+/**
+ * 用户管理相关API接口
+ *
+ * 【模块说明】
+ * - 管理系统用户信息
+ * - 处理密码修改
+ *
+ * 【接口列表】
+ * 1. updatePassword: 修改用户密码
+ *
+ * 【对应后端】
+ * - Controller: UserController
+ * - 路径前缀: /system/user
+ *
+ * 【对应前端组件】
+ * - 用户管理: @/views/system/user/index.vue（不存在）
+ */
+
 import request from '@/utils/request'
 
-export function getUserList(params) {
-  return request({
-    url: '/system/user/page',
-    method: 'get',
-    params
-  })
-}
-
-export function getUserAll() {
-  return request({
-    url: '/system/user/list',
-    method: 'get'
-  })
-}
-
-export function getUserById(id) {
-  return request({
-    url: `/system/user/${id}`,
-    method: 'get'
-  })
-}
-
-export function addUser(data) {
-  return request({
-    url: '/system/user',
-    method: 'post',
-    data
-  })
-}
-
-export function updateUser(data) {
-  return request({
-    url: '/system/user',
-    method: 'put',
-    data
-  })
-}
-
-export function deleteUser(id) {
-  return request({
-    url: `/system/user/${id}`,
-    method: 'delete'
-  })
-}
-
-export function resetPassword(id) {
-  return request({
-    url: `/system/user/reset-password/${id}`,
-    method: 'put'
-  })
-}
-
-export function updateUserStatus(id, status) {
-  return request({
-    url: `/system/user/status/${id}`,
-    method: 'put',
-    params: { status }
-  })
-}
-
+/**
+ * 修改用户密码
+ * @param {Object} data - 密码参数 { userId, oldPassword, newPassword }
+ * @returns {boolean} 是否成功
+ */
 export function updatePassword(data) {
   return request({
     url: '/system/user/password',

@@ -1,3 +1,30 @@
+<!--
+  管理端首页/仪表盘组件
+
+  【模块说明】
+  - 显示招待所的运营数据概览
+  - 包含统计卡片、图表、当前入住列表
+
+  【功能模块】
+  1. 统计卡片：入住中、空闲房间、总房间数
+  2. 房间状态饼图：显示空闲/入住/维护/停用分布
+  3. 入住率仪表盘：显示当前入住率百分比
+  4. 当前入住列表：显示最新入住记录
+
+  【API调用】
+  - getStatistics: 获取统计数据
+  - getActiveCheckIns: 获取当前入住列表
+  - getRoomList: 获取房间列表（用于图表）
+
+  【后端对应】
+  - Controller: CheckInController
+  - 路径: /dorm/checkin/statistics, /dorm/checkin/active
+  - Controller: DormRoomController
+  - 路径: /dorm/room/page
+
+  【路由对应】
+  - /admin/dashboard
+-->
 <template>
   <div class="dashboard">
     <!-- Stat cards -->

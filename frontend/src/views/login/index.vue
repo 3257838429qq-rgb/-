@@ -1,11 +1,36 @@
+<!--
+  登录/注册页面组件
+
+  【模块说明】
+  - 提供用户登录和注册功能
+  - 支持登录表单和注册表单切换
+  - 登录成功后根据userType跳转页面
+
+  【功能流程】
+  1. 登录：输入用户名密码 -> 验证 -> 获取Token -> 跳转
+  2. 注册：填写信息 -> 验证 -> 注册成功 -> 切换到登录页
+
+  【状态管理】
+  - 使用useUserStore存储用户信息
+  - Token存储在localStorage
+  - userType决定跳转路由
+
+  【API调用】
+  - login: 用户登录
+  - register: 用户注册
+
+  【页面跳转】
+  - userType=1 -> /admin/dashboard
+  - userType=0 -> /portal/home
+-->
 <template>
   <div class="login-container">
-    <!-- Animated background circles -->
-    <div class="bg-shapes">
-      <div class="shape shape-1"></div>
-      <div class="shape shape-2"></div>
-      <div class="shape shape-3"></div>
-      <div class="shape shape-4"></div>
+    <!-- Background slideshow -->
+    <div class="bg-slideshow">
+      <div class="slide slide-1"></div>
+      <div class="slide slide-2"></div>
+      <div class="slide slide-3"></div>
+      <div class="slide-overlay"></div>
     </div>
 
     <div class="login-box">
@@ -247,62 +272,61 @@ async function handleRegister() {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0c1929 0%, #1a3a5c 30%, #2d6a9f 60%, #4a9fd4 100%);
   position: relative;
   overflow: hidden;
 }
 
-// Floating background shapes
-.bg-shapes {
+// Background slideshow
+.bg-slideshow {
   position: absolute;
   inset: 0;
-  pointer-events: none;
 
-  .shape {
+  .slide {
     position: absolute;
-    border-radius: 50%;
-    opacity: 0.08;
-    background: #fff;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    animation: slideshow 18s infinite;
   }
 
-  .shape-1 {
-    width: 500px; height: 500px;
-    top: -15%; left: -10%;
-    animation: float 20s ease-in-out infinite;
+  .slide-1 {
+    background-image: url('/images/dongda1.png');
+    animation-delay: 0s;
   }
 
-  .shape-2 {
-    width: 350px; height: 350px;
-    bottom: -10%; right: -5%;
-    animation: float 18s ease-in-out 2s infinite;
+  .slide-2 {
+    background-image: url('/images/dongda2.jpg');
+    animation-delay: 6s;
   }
 
-  .shape-3 {
-    width: 200px; height: 200px;
-    top: 40%; right: 15%;
-    animation: float 15s ease-in-out 1s infinite;
+  .slide-3 {
+    background-image: url('/images/dongda3.jpg');
+    animation-delay: 12s;
   }
 
-  .shape-4 {
-    width: 150px; height: 150px;
-    bottom: 20%; left: 20%;
-    animation: float 12s ease-in-out 3s infinite;
+  .slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(12, 25, 41, 0.7) 0%, rgba(26, 58, 92, 0.6) 50%, rgba(45, 106, 159, 0.5) 100%);
   }
 }
 
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33%  { transform: translate(30px, -30px) scale(1.05); }
-  66%  { transform: translate(-20px, 20px) scale(0.95); }
+@keyframes slideshow {
+  0% { opacity: 0; }
+  5% { opacity: 1; }
+  28% { opacity: 1; }
+  33% { opacity: 0; }
+  100% { opacity: 0; }
 }
 
 // Login box
 .login-box {
   width: 440px;
   padding: 44px 40px;
-  background: rgba(255, 255, 255, 0.97);
+  background: rgba(255, 255, 255, 0.95);
   border-radius: 16px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255,255,255,0.1);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255,255,255,0.2);
   z-index: 1;
   backdrop-filter: blur(10px);
   animation: slideUp 0.5s ease;
