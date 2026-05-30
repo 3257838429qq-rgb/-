@@ -5,4 +5,48 @@
         SELECT * FROM biz_dorm_room WHERE deleted = 0 AND status = #{status}
         ORDER BY room_no ASC
     </select>
+
+    <!--
+        房态图查询
+        LEFT JOIN biz_check_in（仅已入住/退房申请中状态）获取当前入住记录
+        LEFT JOIN biz_visitor 获取客人信息
+        结果：所有房间 + 当前入住客人信息（空闲房间的客人字段为null）
+    -->
+    <select id="selectStatusBoard" resultType="com.neu.hotel.entity.DormRoom">
+        SELECT r.*,
+               v.name AS guest_name,
+               v.phone AS guest_phone,
+               c.check_in_date AS guest_check_in_date,
+               c.check_out_date AS guest_check_out_date,
+               c.id AS check_in_id
+        FROM biz_dorm_room r
+        LEFT JOIN biz_check_in c ON r.id = c.room_id
+            AND c.deleted = 0
+            AND c.check_in_status IN (1, 4)
+        LEFT JOIN biz_visitor v ON c.visitor_id = v.id
+        WHERE r.deleted = 0
+        <if test="status != null">
+            AND r.status = #{status}
+        </if>
+        ORDER BY r.room_no ASC
+    </select>
+
+    <!--
+        按日期范围查询可用房间
+        条件：房间状态为空闲，且该日期范围内没有已入住的冲突记录
+        日期冲突判断：check_in_date < endDate AND check_out_date > startDate
+        （同一天退房+入住不冲突，所以用 < 和 > 而不是 <= 和 >=）
+    -->
+    <select id="selectAvailableByDateRange" resultType="com.neu.hotel.entity.DormRoom">
+        SELECT r.* FROM biz_dorm_room r
+        WHERE r.deleted = 0 AND r.status = 1
+        AND r.id NOT IN (
+            SELECT c.room_id FROM biz_check_in c
+            WHERE c.deleted = 0
+            AND c.check_in_status IN (1)
+            AND c.check_in_date &lt; #{endDate}
+            AND c.check_out_date &gt; #{startDate}
+        )
+        ORDER BY r.room_no ASC
+    </select>
 </mapper>

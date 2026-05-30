@@ -10,6 +10,9 @@ import com.neu.hotel.mapper.DormRoomMapper;
 import com.neu.hotel.service.DormRoomService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.List;
+
 /**
  * 房间管理服务实现类
  *
@@ -104,5 +107,29 @@ public class DormRoomServiceImpl extends ServiceImpl<DormRoomMapper, DormRoom> i
         }
         room.setStatus(status);
         return baseMapper.updateById(room) > 0;
+    }
+
+    /**
+     * 查询房态图数据
+     * 获取所有房间 + 当前入住客人信息（LEFT JOIN）
+     * @param status 可选的房间状态过滤（null=全部）
+     * @return 房间列表（含客人暂存字段）
+     */
+    @Override
+    public List<DormRoom> selectStatusBoard(Integer status) {
+        return baseMapper.selectStatusBoard(status);
+    }
+
+    /**
+     * 按日期范围查询可用房间
+     * 排除在指定日期范围内有冲突入住记录的房间
+     * 日期冲突判断：已有预订的日期与查询范围有重叠
+     * @param startDate 入住日期
+     * @param endDate 退房日期
+     * @return 可用房间列表
+     */
+    @Override
+    public List<DormRoom> selectAvailableByDateRange(LocalDate startDate, LocalDate endDate) {
+        return baseMapper.selectAvailableByDateRange(startDate, endDate);
     }
 }

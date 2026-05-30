@@ -488,7 +488,15 @@ public class CheckInServiceImpl extends ServiceImpl<CheckInMapper, CheckIn> impl
         LambdaQueryWrapper<DormRoom> totalWrapper = new LambdaQueryWrapper<>();
         long totalRooms = dormRoomMapper.selectCount(totalWrapper);
         stats.put("totalRooms", totalRooms);
-        stats.put("occupancyRate", totalRooms > 0 ? (totalRooms - availableRooms) * 100.0 / totalRooms : 0);
+        // 入住率 = 已入住房间数 / 可入住房间总数（不含维护和停用）
+        LambdaQueryWrapper<DormRoom> occupiedWrapper = new LambdaQueryWrapper<>();
+        occupiedWrapper.eq(DormRoom::getStatus, 2);
+        long occupiedRooms = dormRoomMapper.selectCount(occupiedWrapper);
+        // 可入住房间总数 = 总房间 - 维护 - 停用
+        LambdaQueryWrapper<DormRoom> rentableWrapper = new LambdaQueryWrapper<>();
+        rentableWrapper.in(DormRoom::getStatus, 1, 2);  // 空闲 + 入住中
+        long rentableRooms = dormRoomMapper.selectCount(rentableWrapper);
+        stats.put("occupancyRate", rentableRooms > 0 ? occupiedRooms * 100.0 / rentableRooms : 0);
 
         // 待审核预订数
         LambdaQueryWrapper<CheckIn> pendingWrapper = new LambdaQueryWrapper<>();

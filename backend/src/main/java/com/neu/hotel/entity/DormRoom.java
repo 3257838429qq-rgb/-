@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -84,4 +85,21 @@ public class DormRoom implements Serializable {
 
     @TableField(exist = false)
     private BigDecimal priceMax;  // 价格区间最大值
+
+    // ========== 非数据库字段（房态图用——关联客人信息） ==========
+
+    @TableField(exist = false)
+    private String guestName;         // 当前入住客人姓名
+
+    @TableField(exist = false)
+    private String guestPhone;        // 当前入住客人手机号
+
+    @TableField(exist = false)
+    private LocalDate guestCheckInDate;   // 当前入住客人入住日期
+
+    @TableField(exist = false)
+    private LocalDate guestCheckOutDate;  // 当前入住客人预退日期
+
+    @TableField(exist = false)
+    private Long checkInId;          // 当前入住记录ID（快捷退房用）
 }

@@ -86,6 +86,7 @@
             </template>
             <el-menu-item index="/admin/dorm/room-type">房型管理</el-menu-item>
             <el-menu-item index="/admin/dorm/room">房间管理</el-menu-item>
+            <el-menu-item index="/admin/dorm/room-status">房态图</el-menu-item>
             <el-menu-item index="/admin/dorm/checkin">入住登记</el-menu-item>
             <el-menu-item index="/admin/dorm/record">住宿记录</el-menu-item>
           </el-sub-menu>

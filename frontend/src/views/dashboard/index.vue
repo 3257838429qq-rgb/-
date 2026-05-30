@@ -197,7 +197,15 @@ function initRoomChart(roomData) {
       label: {
         show: true,
         position: 'outside',
-        formatter: '{b}\n{d}%',
+        formatter: (p) => {
+          // 入住：按可入住房间（空闲+入住）为分母计算百分比，与入住率口径一致
+          if (p.name === '入住') {
+            const rentableTotal = count(1) + count(2)
+            const rate = rentableTotal > 0 ? (count(2) * 100 / rentableTotal).toFixed(1) : '0'
+            return `入住\n${rate}%`
+          }
+          return `${p.name}\n${p.percent}%`
+        },
         fontSize: 12
       },
       emphasis: {
@@ -217,9 +225,7 @@ function initRoomChart(roomData) {
 function initOccupancyChart() {
   if (!occupancyChartRef.value) return
   occupancyChart = echarts.init(occupancyChartRef.value)
-  const rate = stats.value.totalRooms > 0
-    ? ((stats.value.totalRooms - stats.value.availableRooms) * 100 / stats.value.totalRooms).toFixed(1)
-    : 0
+  const rate = stats.value.occupancyRate ? stats.value.occupancyRate.toFixed(1) : 0
 
   occupancyChart.setOption({
     series: [{

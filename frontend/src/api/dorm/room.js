@@ -126,3 +126,29 @@ export function updateRoomStatus(id, status) {
     params: { status }
   })
 }
+
+/**
+ * 获取房态图数据（所有房间 + 当前入住客人信息）
+ * @param {number} status - 可选的房间状态过滤（null=全部, 1=空闲, 2=入住, 3=维护, 4=停用）
+ * @returns {Array} 房间列表（含客人暂存字段）
+ */
+export function getStatusBoard(status) {
+  return request({
+    url: '/dorm/room/status-board',
+    method: 'get',
+    params: status != null ? { status } : {}
+  })
+}
+
+/**
+ * 按日期范围查询可用房间（日历预订用）
+ * @param {Object} params - { startDate: '2026-06-01', endDate: '2026-06-03' }
+ * @returns {Array} 可用房间列表
+ */
+export function getAvailableByDateRange(params) {
+  return request({
+    url: '/dorm/room/available-by-date',
+    method: 'get',
+    params
+  })
+}

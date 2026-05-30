@@ -62,6 +62,7 @@ const routes = [
       // 房间管理
       { path: 'dorm/room-type', name: 'RoomType', component: () => import('@/views/dorm/room-type/index.vue'), meta: { title: '房型管理', roles: [1] } },
       { path: 'dorm/room', name: 'DormRoom', component: () => import('@/views/dorm/room/index.vue'), meta: { title: '房间管理', roles: [1] } },
+      { path: 'dorm/room-status', name: 'RoomStatus', component: () => import('@/views/dorm/room-status/index.vue'), meta: { title: '房态图', roles: [1] } },
       { path: 'dorm/checkin', name: 'CheckIn', component: () => import('@/views/dorm/checkin/index.vue'), meta: { title: '入住登记', roles: [1] } },
       { path: 'dorm/record', name: 'StayRecord', component: () => import('@/views/dorm/record/index.vue'), meta: { title: '住宿记录', roles: [1] } }
     ]
@@ -76,6 +77,7 @@ const routes = [
     children: [
       { path: 'home', name: 'PortalHome', component: () => import('@/views/portal/Home.vue'), meta: { title: '首页' } },
       { path: 'rooms', name: 'PortalRooms', component: () => import('@/views/portal/Rooms.vue'), meta: { title: '客房浏览' } },
+      { path: 'calendar', name: 'PortalCalendar', component: () => import('@/views/portal/Calendar.vue'), meta: { title: '日历预订' } },
       { path: 'bookings', name: 'PortalBookings', component: () => import('@/views/portal/Bookings.vue'), meta: { title: '我的预订' } },
       { path: 'visit', name: 'PortalVisit', component: () => import('@/views/portal/Visit.vue'), meta: { title: '来访预约' } },
       { path: 'vip', name: 'PortalVip', component: () => import('@/views/portal/Vip.vue'), meta: { title: 'VIP会员' } },

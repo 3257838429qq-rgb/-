@@ -8,6 +8,8 @@ import com.neu.hotel.service.DormRoomService;
 import com.neu.hotel.service.DormRoomTypeService;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 /**
  * 房间管理控制器
  *
@@ -128,5 +130,29 @@ public class DormRoomController {
     @Log(title = "房间管理", businessType = "DELETE", operType = "删除")
     public Result delete(@PathVariable Long id) {
         return Result.success(dormRoomService.removeById(id));
+    }
+
+    /**
+     * 获取房态图数据
+     * 返回所有房间 + 当前入住客人信息
+     * GET /dorm/room/status-board?status=1
+     * @param status 可选的房间状态过滤（null=全部）
+     */
+    @GetMapping("/status-board")
+    public Result getStatusBoard(@RequestParam(required = false) Integer status) {
+        return Result.success(dormRoomService.selectStatusBoard(status));
+    }
+
+    /**
+     * 按日期范围查询可用房间（日历预订用）
+     * 查询指定日期范围内空闲且无冲突入住记录的房间
+     * GET /dorm/room/available-by-date?startDate=2026-06-01&endDate=2026-06-03
+     * @param startDate 入住开始日期
+     * @param endDate 退房日期
+     */
+    @GetMapping("/available-by-date")
+    public Result getAvailableByDateRange(@RequestParam LocalDate startDate,
+                                           @RequestParam LocalDate endDate) {
+        return Result.success(dormRoomService.selectAvailableByDateRange(startDate, endDate));
     }
 }

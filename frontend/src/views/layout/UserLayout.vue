@@ -49,6 +49,7 @@
         <nav class="header-nav">
           <router-link to="/portal/home" class="nav-item" active-class="nav-active">首页</router-link>
           <router-link to="/portal/rooms" class="nav-item" active-class="nav-active">客房浏览</router-link>
+          <router-link to="/portal/calendar" class="nav-item" active-class="nav-active">日历预订</router-link>
           <router-link to="/portal/visit" class="nav-item" active-class="nav-active">来访预约</router-link>
           <router-link to="/portal/bookings" class="nav-item" active-class="nav-active">我的预订</router-link>
           <router-link to="/portal/vip" class="nav-item" active-class="nav-active">VIP会员</router-link>
